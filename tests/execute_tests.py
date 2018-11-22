@@ -24,6 +24,7 @@ if __name__ == "__main__":
     from tests.etc_tests import ETCTest
     from tests.evaluation_tests import ProcessModelEvaluationTests
     from tests.bpmn_tests import BpmnTests
+    from tests.dec_tree_test import DecisionTreeTest
 
     test1_object = Pm4pyImportPackageTest()
     test2_object = XesImportExportTest()
@@ -42,5 +43,6 @@ if __name__ == "__main__":
     test17_object = ETCTest()
     test20_object = ProcessModelEvaluationTests()
     bpmn_test_object = BpmnTests()
+    test21_object = DecisionTreeTest()
 
     unittest.main()

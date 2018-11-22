@@ -10,3 +10,4 @@ pandas
 pydotplus
 networkx==1.11
 bpmn_python==0.0.18
+sklearn
