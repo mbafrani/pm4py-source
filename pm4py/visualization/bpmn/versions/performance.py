@@ -4,11 +4,11 @@ from pm4py.objects.conversion.bpmn_to_petri import factory as bpmn_to_petri
 from pm4py.objects.conversion.petri_to_bpmn import factory as bpmn_converter
 from pm4py.objects.log.util.xes import DEFAULT_NAME_KEY
 from pm4py.util.constants import PARAMETER_CONSTANT_ACTIVITY_KEY
+from pm4py.visualization.bpmn.util import bpmn_embedding
 from pm4py.visualization.bpmn.util import convert_performance_map
 from pm4py.visualization.bpmn.util.bpmn_to_figure import bpmn_diagram_to_figure
 from pm4py.visualization.petrinet.util import vis_trans_shortest_paths
 from pm4py.visualization.petrinet.versions import token_decoration
-from pm4py.visualization.bpmn.util import bpmn_embedding
 
 
 def apply(bpmn_graph, parameters=None, bpmn_aggreg_statistics=None):
@@ -123,7 +123,8 @@ def apply_through_conv(bpmn_graph, log=None, aggregated_statistics=None, paramet
 
     if aggregated_statistics is None and log is not None:
         aggregated_statistics = token_decoration.get_decorations(log, net, initial_marking, final_marking,
-                                                                 parameters=parameters, measure="performance")
+                                                                 parameters=parameters, measure="performance",
+                                                                 ht_perf_method="first")
 
     bpmn_aggreg_statistics = None
     if aggregated_statistics is not None:
