@@ -12,8 +12,8 @@ MAX_IT_FINAL = 10
 MAX_REC_DEPTH_HIDTRANSENABL = 5
 MAX_POSTFIX_SUFFIX_LENGTH = 20
 MAX_NO_THREADS = 1000
-ENABLE_POSTFIX_CACHE = True
-ENABLE_MARKTOACT_CACHE = True
+ENABLE_POSTFIX_CACHE = False
+ENABLE_MARKTOACT_CACHE = False
 
 
 class NoConceptNameException(Exception):
@@ -378,21 +378,33 @@ def get_visible_transitions_eventually_enabled_by_marking(net, marking):
         Current marking
     """
     all_enabled_transitions = list(semantics.enabled_transitions(net, marking))
+    initial_all_enabled_transitions_marking_dictio = {}
+    all_enabled_transitions_marking_dictio = {}
+    for trans in all_enabled_transitions:
+        all_enabled_transitions_marking_dictio[trans] = marking
+        initial_all_enabled_transitions_marking_dictio[trans] = marking
     visible_transitions = set()
     visited_transitions = set()
 
-    for i in range(len(all_enabled_transitions)):
+    i = 0
+    while i < len(all_enabled_transitions):
         t = all_enabled_transitions[i]
-        if t not in visited_transitions:
+        marking_copy = copy(all_enabled_transitions_marking_dictio[t])
+
+        if repr([t, marking_copy]) not in visited_transitions:
+            #print(repr([t, marking_copy]))
             if t.label is not None:
                 visible_transitions.add(t)
             else:
-                marking_copy = copy(marking)
                 if semantics.is_enabled(t, net, marking_copy):
                     new_marking = semantics.execute(t, net, marking_copy)
                     new_enabled_transitions = list(semantics.enabled_transitions(net, new_marking))
-                    all_enabled_transitions = all_enabled_transitions + new_enabled_transitions
-            visited_transitions.add(t)
+                    for t2 in new_enabled_transitions:
+                        #if t2 not in all_enabled_transitions:
+                        all_enabled_transitions.append(t2)
+                        all_enabled_transitions_marking_dictio[t2] = new_marking
+            visited_transitions.add(repr([t, marking_copy]))
+        i = i + 1
 
     return visible_transitions
 
@@ -634,7 +646,8 @@ def apply_trace(trace, net, initial_marking, final_marking, trans_map, enable_pl
                             "previousActivity": previous_activity}
 
     return [is_fit, trace_fitness, act_trans, transitions_with_problems, marking_before_cleaning,
-            get_visible_transitions_eventually_enabled_by_marking(net, marking_before_cleaning)]
+            get_visible_transitions_eventually_enabled_by_marking(net, marking_before_cleaning), missing, consumed,
+            remaining, produced]
 
 
 class ApplyTraceTokenReplay(Thread):
@@ -667,6 +680,10 @@ class ApplyTraceTokenReplay(Thread):
         self.trans_probl = None
         self.reached_marking = None
         self.enabled_trans_in_mark = None
+        self.missing = None
+        self.consumed = None
+        self.remaining = None
+        self.produced = None
 
         Thread.__init__(self)
 
@@ -674,7 +691,7 @@ class ApplyTraceTokenReplay(Thread):
         """
         Runs the thread and stores the results
         """
-        self.t_fit, self.t_value, self.act_trans, self.trans_probl, self.reached_marking, self.enabled_trans_in_mark = \
+        self.t_fit, self.t_value, self.act_trans, self.trans_probl, self.reached_marking, self.enabled_trans_in_mark, self.missing, self.consumed, self.remaining, self.produced = \
             apply_trace(self.trace, self.net, self.initial_marking, self.final_marking, self.trans_map,
                         self.enable_place_fitness, self.place_fitness,
                         self.places_shortest_path_by_hidden, self.consider_remaining_in_fitness,
@@ -811,7 +828,11 @@ def apply_log(log, net, initial_marking, final_marking, enable_place_fitness=Fal
                                                                 "enabled_transitions_in_marking": copy(
                                                                     t.enabled_trans_in_mark),
                                                                 "transitions_with_problems": copy(
-                                                                    t.trans_probl)}
+                                                                    t.trans_probl),
+                                                                "missing_tokens": t.missing,
+                                                                "consumed_tokens": t.consumed,
+                                                                "remaining_tokens": t.remaining,
+                                                                "produced_tokens": t.produced}
                             del threads[threads_keys[j]]
                         del threads_keys
                     threads[variant] = ApplyTraceTokenReplay(variants[variant][0], net, initial_marking, final_marking,
@@ -834,7 +855,11 @@ def apply_log(log, net, initial_marking, final_marking, enable_place_fitness=Fal
                                                         "reached_marking": copy(t.reached_marking),
                                                         "enabled_transitions_in_marking": copy(
                                                             t.enabled_trans_in_mark),
-                                                        "transitions_with_problems": copy(t.trans_probl)}
+                                                        "transitions_with_problems": copy(t.trans_probl),
+                                                        "missing_tokens": t.missing,
+                                                        "consumed_tokens": t.consumed,
+                                                        "remaining_tokens": t.remaining,
+                                                        "produced_tokens": t.produced}
                     del threads[threads_keys[j]]
                 for trace in log:
                     trace_variant = ",".join([x[activity_key] for x in trace])
