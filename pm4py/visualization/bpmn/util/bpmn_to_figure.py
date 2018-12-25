@@ -32,7 +32,8 @@ def bpmn_diagram_to_figure(bpmn_graph, image_format, bpmn_aggreg_statistics=None
     graph = pydotplus.Dot()
     for node in g.nodes(data=True):
         if node[1].get(consts.Consts.type) == consts.Consts.task:
-            if str(node[1]) in bpmn_aggreg_statistics:
+            if str(node[1]) in bpmn_aggreg_statistics and "label" in bpmn_aggreg_statistics[str(node[1])] and "color" in \
+                    bpmn_aggreg_statistics[str(node[1])]:
                 node_statistics = bpmn_aggreg_statistics[str(node[1])]
                 n = pydotplus.Node(name=node[0], shape="box", style="filled",
                                    label=node_statistics['label'], fillcolor=node_statistics['color'])
@@ -50,7 +51,8 @@ def bpmn_diagram_to_figure(bpmn_graph, image_format, bpmn_aggreg_statistics=None
         edge_source = edge[2]['sourceRef']
         edge_target = edge[2]['targetRef']
 
-        if str(edge[2]) in bpmn_aggreg_statistics:
+        if str(edge[2]) in bpmn_aggreg_statistics and "label" in bpmn_aggreg_statistics[str(edge[2])] and "penwidth" in \
+                bpmn_aggreg_statistics[str(edge[2])]:
             edge_statistics = bpmn_aggreg_statistics[str(edge[2])]
             e = pydotplus.Edge(src=edge_source, dst=edge_target, label=edge_statistics['label'],
                                penwidth=edge_statistics['penwidth'])

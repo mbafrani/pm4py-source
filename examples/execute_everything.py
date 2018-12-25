@@ -6,6 +6,8 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(inspect.getfi
 
 if __name__ == "__main__":
     from examples import big_log_imdf_decor
+    from examples import bpmn_decoration_log
+    from examples import bpmn_decoration_df
     from examples import alignment_test
     from examples import dec_treplay_imdf
     from examples import imdf_example
@@ -22,6 +24,10 @@ if __name__ == "__main__":
     big_log_imdf_decor.execute_script(variant="frequency")
     print("\n\nbig_log_imdf_decor performance")
     big_log_imdf_decor.execute_script(variant="performance")
+    print("\n\nbpmn_decoration_log")
+    bpmn_decoration_log.execute_script()
+    print("\n\nbpmn_decoration_df")
+    bpmn_decoration_df.execute_script()
     print("\n\nalignment_test")
     alignment_test.execute_script()
     print("\n\ndec_treplay_imdf")
