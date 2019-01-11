@@ -8,7 +8,7 @@ dataclasses
 lxml
 graphviz
 pandas
-sklearn
 scipy
 pydotplus
 bpmn_python==0.0.18
+scikit-learn
