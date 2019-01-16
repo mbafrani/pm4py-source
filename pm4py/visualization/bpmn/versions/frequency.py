@@ -261,29 +261,25 @@ def apply_through_conv_greedy(bpmn_graph, dfg, activities_count, log=None, aggre
     if parameters is None:
         parameters = {}
 
+    del log
+    del aggregated_statistics
+
+    image_format = parameters["format"] if "format" in parameters else "png"
+
     net, initial_marking, final_marking, elements_correspondence, inv_elements_correspondence, el_corr_keys_map = \
         bpmn_to_petri.apply(bpmn_graph)
 
     spaths = vis_trans_shortest_paths.get_shortest_paths(net, enable_extension=True)
 
-    print(spaths)
-
     aggregated_statistics = vis_trans_shortest_paths.get_decorations_from_dfg_spaths_acticount(net, dfg, spaths,
                                                                                                activities_count,
                                                                                                variant="frequency")
 
-    print(aggregated_statistics)
-
     bpmn_aggreg_statistics = convert_performance_map.convert_performance_map_to_bpmn(aggregated_statistics,
                                                                                      inv_elements_correspondence)
 
-    print(bpmn_aggreg_statistics)
-
-    del dfg
-    del activities_count
-    del log
-    del aggregated_statistics
-    return apply(bpmn_graph, parameters=parameters)
+    file_name = bpmn_diagram_to_figure(bpmn_graph, image_format, bpmn_aggreg_statistics=bpmn_aggreg_statistics)
+    return file_name
 
 
 def apply_embedding_greedy(bpmn_graph, dfg, activities_count, log=None, aggregated_statistics=None, parameters=None):
