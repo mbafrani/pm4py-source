@@ -196,36 +196,6 @@ def apply_petri_greedy(net, initial_marking, final_marking, log=None, aggregated
     return file_name
 
 
-def apply_through_conv_greedy(bpmn_graph, log=None, aggregated_statistics=None, parameters=None):
-    """
-    Visualize a BPMN graph decorating it through conversion to a Petri net
-
-    Parameters
-    -----------
-    bpmn_graph
-        BPMN graph object
-    log
-        (Optional) log where the replay technique should be applied
-    aggregated_statistics
-        (Optional) element-wise statistics calculated on the Petri net
-    parameters
-        Possible parameters, of the algorithm, including:
-            format -> Format of the image to render (pdf, png, svg)
-
-    Returns
-    -----------
-    file_name
-        Path of the figure in which the rendered BPMN has been saved
-    """
-
-    del bpmn_graph
-    del log
-    del aggregated_statistics
-    del parameters
-
-    raise Exception("apply_through_conv_greedy not implemented")
-
-
 def apply_embedding(bpmn_graph, log=None, aggregated_statistics=None, parameters=None):
     """
     Embed decoration information inside the BPMN graph
@@ -264,26 +234,65 @@ def apply_embedding(bpmn_graph, log=None, aggregated_statistics=None, parameters
     return bpmn_graph
 
 
-def apply_embedding_greedy(bpmn_graph, log=None, aggregated_statistics=None, parameters=None):
+def apply_through_conv_greedy(bpmn_graph, dfg, activities_count, log=None, aggregated_statistics=None, parameters=None):
+    """
+    Decorate BPMN graph through conversion to Petri net, using shortest paths in the Petri net
+
+    Parameters
+    -------------
+    bpmn_graph
+        BPMN graph
+    dfg
+        Directly-Follows graph
+    activities_count
+        Count of occurrences of the activities
+    log
+        Log object
+    aggregated_statistics
+        Aggregated statistics object
+    parameters
+        Possible parameters of the algorithm
+
+    Returns
+    -------------
+    file_name
+        Path of the figure in which the rendered BPMN has been saved
+    """
+    if parameters is None:
+        parameters = {}
+    del dfg
+    del activities_count
+    del log
+    del aggregated_statistics
+    return apply(bpmn_graph, parameters=parameters)
+
+
+def apply_embedding_greedy(bpmn_graph, dfg, activities_count, log=None, aggregated_statistics=None, parameters=None):
     """
     Embed decoration information inside the BPMN graph
 
     Parameters
     -----------
     bpmn_graph
-        BPMN graph object
+        BPMN graph
+    dfg
+        Directly-Follows graph
+    activities_count
+        Count of occurrences of the activities
     log
-        (Optional) log where the replay technique should be applied
+        Log object
     aggregated_statistics
-        (Optional) element-wise statistics calculated on the Petri net
+        Aggregated statistics object
     parameters
-        Possible parameters, of the algorithm
+        Possible parameters of the algorithm
 
     Returns
     -----------
     bpmn_graph
         Annotated BPMN graph
     """
+    del dfg
+    del activities_count
     del bpmn_graph
     del log
     del aggregated_statistics

@@ -123,3 +123,36 @@ def apply_embedding(bpmn_graph, log=None, aggregated_statistics=None, parameters
     del aggregated_statistics
     del parameters
     return bpmn_graph
+
+
+def apply_through_conv_greedy(bpmn_graph, dfg, activities_count, log=None, aggregated_statistics=None, parameters=None):
+    """
+    Decorate BPMN graph through conversion to Petri net, using shortest paths in the Petri net
+
+    Parameters
+    -------------
+    bpmn_graph
+        BPMN graph
+    dfg
+        Directly-Follows graph
+    activities_count
+        Count of occurrences of the activities
+    log
+        Log object
+    aggregated_statistics
+        Aggregated statistics object
+    parameters
+        Possible parameters of the algorithm
+
+    Returns
+    -------------
+    file_name
+        Path of the figure in which the rendered BPMN has been saved
+    """
+    if parameters is None:
+        parameters = {}
+    del dfg
+    del activities_count
+    del log
+    del aggregated_statistics
+    return apply(bpmn_graph, parameters=parameters)
