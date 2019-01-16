@@ -194,14 +194,13 @@ def apply(net, initial_marking, final_marking, parameters=None):
         if trans.label is not None:
             if trans in start_trans and len(start_trans) == 1:
                 [task_id, task] = bpmn_graph.add_task_to_diagram(process_id, task_name=trans.label,
-                                                                 node_id=constants.STARTACT_PREFIX + str(uuid.uuid4()))
+                                                                 node_id=trans.label)
             elif trans in final_trans and len(final_trans) == 1:
                 [task_id, task] = bpmn_graph.add_task_to_diagram(process_id, task_name=trans.label,
-                                                                 node_id=constants.ENDACT_PREFIX + str(uuid.uuid4()))
+                                                                 node_id=trans.label)
             else:
                 [task_id, task] = bpmn_graph.add_task_to_diagram(process_id, task_name=trans.label,
-                                                                 node_id=constants.INTERNAL_ACT_PREFIX + str(
-                                                                     uuid.uuid4()))
+                                                                 node_id=trans.label)
             bpmn_transitions_map[trans] = task_id
             elements_correspondence[trans] = task
 
