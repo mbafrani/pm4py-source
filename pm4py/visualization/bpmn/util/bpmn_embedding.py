@@ -31,13 +31,13 @@ def embed_info_into_bpmn(bpmn_graph, bpmn_aggreg_statistics, decoration):
                 flow[2][bpmn_python_consts.Consts.decorations] = []
             for stat in statistics:
                 stat_value = statistics[stat]
-                flow[2][bpmn_python_consts.Consts.decorations].append([decoration + "_" + stat, stat_value])
+                flow[2][bpmn_python_consts.Consts.decorations].append([decoration + "_" + stat, str(stat_value)])
         elif el_type == "task":
             node = bpmn_graph.get_node_by_id(el_id)
             if bpmn_python_consts.Consts.decorations not in node[1]:
                 node[1][bpmn_python_consts.Consts.decorations] = []
             for stat in statistics:
                 stat_value = statistics[stat]
-                node[1][bpmn_python_consts.Consts.decorations].append([decoration + "_" + stat, stat_value])
+                node[1][bpmn_python_consts.Consts.decorations].append([decoration + "_" + stat, str(stat_value)])
 
     return bpmn_graph
