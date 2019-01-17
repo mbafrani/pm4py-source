@@ -306,11 +306,22 @@ def apply_embedding_greedy(bpmn_graph, dfg, activities_count, log=None, aggregat
     bpmn_graph
         Annotated BPMN graph
     """
-    del dfg
-    del activities_count
-    del bpmn_graph
+    del parameters
     del log
     del aggregated_statistics
-    del parameters
 
-    raise Exception("apply_embedding_greedy not implemented")
+    net, initial_marking, final_marking, elements_correspondence, inv_elements_correspondence, el_corr_keys_map = \
+        bpmn_to_petri.apply(bpmn_graph)
+
+    spaths = vis_trans_shortest_paths.get_shortest_paths(net, enable_extension=True)
+
+    aggregated_statistics = vis_trans_shortest_paths.get_decorations_from_dfg_spaths_acticount(net, dfg, spaths,
+                                                                                               activities_count,
+                                                                                               variant="frequency")
+
+    bpmn_aggreg_statistics = convert_performance_map.convert_performance_map_to_bpmn(aggregated_statistics,
+                                                                                     inv_elements_correspondence)
+
+    bpmn_graph = bpmn_embedding.embed_info_into_bpmn(bpmn_graph, bpmn_aggreg_statistics, "frequency")
+
+    return bpmn_graph
