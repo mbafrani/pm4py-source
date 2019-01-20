@@ -1,5 +1,4 @@
-FROM python:3.6
-#FROM tiangolo/uwsgi-nginx-flask:python3.6
+FROM python:3.5
 
 RUN apt-get update
 RUN apt-get -y install nano vim
@@ -11,5 +10,5 @@ RUN pip install pyvis==0.1.5.0 networkx==2.2 matplotlib==2.2.2 numpy==1.16.0 cis
 RUN pip install pydotplus==2.0.2 bpmn_python==0.0.18
 
 COPY . /app
-
-#ENTRYPOINT ["uwsgi", "--http", "0.0.0.0:80", "--module", "main:app", "--processes", "8", "--threads", "8"]
+RUN cd /app && python setup.py install
+RUN pip install jupyter
