@@ -1,4 +1,4 @@
-FROM python:3.5
+FROM python:3.6
 
 RUN apt-get update
 RUN apt-get -y install nano vim
@@ -10,5 +10,4 @@ RUN pip install pyvis==0.1.5.0 networkx==2.2 matplotlib==2.2.2 numpy==1.16.0 cis
 RUN pip install pydotplus==2.0.2 bpmn_python==0.0.18
 
 COPY . /app
-RUN cd /app && python setup.py install
-RUN pip install jupyter
+RUN cd /app && cp tests/test_dockers/setups/setup_master.py setup.py && python setup.py install
