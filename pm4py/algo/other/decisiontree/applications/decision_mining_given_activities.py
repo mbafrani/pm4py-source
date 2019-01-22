@@ -11,6 +11,19 @@ from pm4py.objects.log.log import TraceLog
 DEFAULT_MAX_REC_DEPTH_DEC_MINING = 2
 
 
+def enrich_gateway_map_with_rules(log, gateway_map, parameters=None):
+    for gw in gateway_map:
+        source_activity = gateway_map[gw]["source"]
+        if gateway_map[gw]["type"] == "onlytasks":
+            target_activities = [x for x in gateway_map[gw]["edges"]]
+            rules = get_decision_mining_rules_given_activities(log, target_activities)
+            print(rules)
+            for n in gateway_map[gw]["edges"]:
+                if n in rules:
+                    print(n, rules[n])
+
+            #print(source_activity, target_activities)
+
 def get_decision_mining_rules_given_activities(log, activities, parameters=None):
     """
     Performs rules discovery thanks to decision mining from a log and a list of activities
@@ -127,10 +140,11 @@ def get_rules_for_classes(tree, feature_names, classes, len_list_logs, rec_depth
 
     if child_left == child_right:
         target_class = classes[np.argmax(value)]
-        if target_class not in rules:
-            rules[target_class] = []
-        rule_to_save = "(" + " && ".join(curr_rec_rule) + ")"
-        rules[target_class].append(rule_to_save)
+        if curr_rec_rule:
+            if target_class not in rules:
+                rules[target_class] = []
+            rule_to_save = "(" + " && ".join(curr_rec_rule) + ")"
+            rules[target_class].append(rule_to_save)
     else:
         if not child_left == curr_node and child_left >= 0:
             new_curr_rec_rule = form_new_curr_rec_rule(curr_rec_rule, False, feature_name, threshold)
