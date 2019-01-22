@@ -11,18 +11,36 @@ from pm4py.objects.log.log import TraceLog
 DEFAULT_MAX_REC_DEPTH_DEC_MINING = 2
 
 
-def enrich_gateway_map_with_rules(log, gateway_map, parameters=None):
+def get_rules_per_edge(log, gateway_map, parameters=None):
+    """
+    Gets the rules associated to each edge
+
+    Parameters
+    ------------
+    log
+        Trace log
+    gateway_map
+        Gateway map
+    parameters
+        Possible parameters of the algorithm
+
+    Returns
+    ------------
+    rules_per_edge
+        Dictionary that associates to each edge a rule
+    """
+    rules_per_edge = {}
+    rules = {}
     for gw in gateway_map:
         source_activity = gateway_map[gw]["source"]
         if gateway_map[gw]["type"] == "onlytasks":
             target_activities = [x for x in gateway_map[gw]["edges"]]
-            rules = get_decision_mining_rules_given_activities(log, target_activities)
-            print(rules)
-            for n in gateway_map[gw]["edges"]:
-                if n in rules:
-                    print(n, rules[n])
+            rules = get_decision_mining_rules_given_activities(log, target_activities, parameters=parameters)
+        for n in gateway_map[gw]["edges"]:
+            if n in rules:
+                rules_per_edge[gateway_map[gw]["edges"][n]["edge"]] = rules[n]
+    return rules_per_edge
 
-            #print(source_activity, target_activities)
 
 def get_decision_mining_rules_given_activities(log, activities, parameters=None):
     """
