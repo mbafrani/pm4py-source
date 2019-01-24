@@ -3,8 +3,38 @@ import numpy as np
 from pm4py.algo.other.decisiontree import get_log_representation
 from pm4py.algo.other.decisiontree import log_transforming
 from pm4py.algo.other.decisiontree import mine_decision_tree
+from pm4py.objects.bpmn.util import log_matching
 
 DEFAULT_MAX_REC_DEPTH_DEC_MINING = 3
+
+
+def perform_duration_root_cause_analysis_given_bpmn(log, bpmn_graph, bpmn_activity, parameters=None):
+    """
+    Performs root
+
+    Parameters
+    -------------
+    log
+        Trace log
+    bpmn_graph
+        BPMN graph that is being considered
+    bpmn_activity
+        Activity on the BPMN graph
+    parameters
+        Possible parameters of the algorithm
+
+    Returns
+    -------------
+    clf
+        Decision tree
+    feature_names
+        Feature names
+    classes
+        Classes
+    """
+    model_to_log, log_to_model = log_matching.get_log_match_with_model(log, bpmn_graph)
+    log_activity = model_to_log[bpmn_activity]
+    return perform_duration_root_cause_analysis(log, log_activity, parameters=parameters)
 
 
 def perform_duration_root_cause_analysis(log, activity, parameters=None):
