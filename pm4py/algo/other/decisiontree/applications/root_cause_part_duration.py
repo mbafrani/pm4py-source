@@ -10,7 +10,8 @@ DEFAULT_MAX_REC_DEPTH_DEC_MINING = 3
 
 def perform_duration_root_cause_analysis_given_bpmn(log, bpmn_graph, bpmn_activity, parameters=None):
     """
-    Performs root
+    Perform root cause analysis about the excessive duration of an activity, matching the BPMN activities
+    with the log.
 
     Parameters
     -------------

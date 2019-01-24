@@ -6,9 +6,74 @@ import numpy as np
 from pm4py.algo.other.decisiontree import get_log_representation
 from pm4py.algo.other.decisiontree import log_transforming
 from pm4py.algo.other.decisiontree import mine_decision_tree
+from pm4py.objects.bpmn.util import log_matching
+from pm4py.objects.bpmn.util import gateway_map as gwmap_builder
 from pm4py.objects.log.log import TraceLog
 
+import traceback
+
 DEFAULT_MAX_REC_DEPTH_DEC_MINING = 2
+
+
+def get_rules_per_edge_given_bpmn(log, bpmn_graph, parameters=None):
+    """
+    Gets the rules associated to each edge, matching the BPMN activities with the log.
+
+    Parameters
+    ------------
+    log
+        Trace log
+    bpmn_graph
+        BPMN graph that is being considered
+    parameters
+        Possible parameters of the algorithm
+
+    Returns
+    ------------
+    rules_per_edge
+        Dictionary that associates to each edge a rule
+    """
+    gateway_map, edges_map = gwmap_builder.get_gateway_map(bpmn_graph)
+
+    return get_rules_per_edge_given_bpmn_and_gw_map(log, bpmn_graph, gateway_map, parameters=parameters)
+
+
+def get_rules_per_edge_given_bpmn_and_gw_map(log, bpmn_graph, gateway_map, parameters=None):
+    """
+    Gets the rules associated to each edge, matching the BPMN activities with the log.
+
+    Parameters
+    ------------
+    log
+        Trace log
+    bpmn_graph
+        BPMN graph that is being considered
+    gateway_map
+        Gateway map
+    parameters
+        Possible parameters of the algorithm
+
+    Returns
+    ------------
+    rules_per_edge
+        Dictionary that associates to each edge a rule
+    """
+    model_to_log, log_to_model = log_matching.get_log_match_with_model(log, bpmn_graph)
+    gmk = list(gateway_map.keys())
+    for gw in gmk:
+        try:
+            gateway_map[gw]["source"] = model_to_log[gateway_map[gw]["source"]]
+            for n in gateway_map[gw]["edges"]:
+                gmgwk = gateway_map[gw]["edges"].keys()
+                for key in gmgwk:
+                    if not key == model_to_log[key]:
+                        gateway_map[gw]["edges"][n][model_to_log[key]] = gateway_map[gw]["edges"][n][key]
+                        del gateway_map[gw]["edges"][n][key]
+        except:
+            traceback.print_exc()
+            del gateway_map[gw]
+
+    return get_rules_per_edge(log, gateway_map, parameters=parameters)
 
 
 def get_rules_per_edge(log, gateway_map, parameters=None):
@@ -95,13 +160,18 @@ def perform_decision_mining_given_activities(log, activities, parameters=None):
     len_list_logs
         Length of each sublog considered
     """
+    if parameters is None:
+        parameters = {}
+
+    max_diff_targets = parameters["max_diff_targets"] if "max_diff_targets" in parameters else 9999999999
+
     list_logs, considered_activities = log_transforming.get_log_traces_to_activities(log, activities,
                                                                                      parameters=parameters)
 
     classes = considered_activities
     target = []
     for i in range(len(list_logs)):
-        target = target + [i] * len(list_logs[i])
+        target = target + [min(i, max_diff_targets)] * len(list_logs[i])
 
     transf_log = TraceLog(list(itertools.chain.from_iterable(list_logs)))
 
