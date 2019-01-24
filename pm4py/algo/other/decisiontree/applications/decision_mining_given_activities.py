@@ -9,6 +9,7 @@ from pm4py.algo.other.decisiontree import mine_decision_tree
 from pm4py.objects.bpmn.util import log_matching
 from pm4py.objects.bpmn.util import gateway_map as gwmap_builder
 from pm4py.objects.log.log import TraceLog
+from pm4py.algo.discovery.dfg import factory as dfg_factory
 
 import traceback
 
@@ -95,17 +96,53 @@ def get_rules_per_edge(log, gateway_map, parameters=None):
         Dictionary that associates to each edge a rule
     """
     rules_per_edge = {}
-    rules = {}
     for gw in gateway_map:
+        rules = None
+        rules = {}
         source_activity = gateway_map[gw]["source"]
         if gateway_map[gw]["type"] == "onlytasks":
             target_activities = [x for x in gateway_map[gw]["edges"]]
             rules = get_decision_mining_rules_given_activities(log, target_activities, parameters=parameters)
+        else:
+            main_target_activity = list(gateway_map[gw]["edges"].keys())[0]
+            other_activities = get_other_activities_connected_to_source(log, source_activity, main_target_activity)
+            if other_activities:
+                target_activities = [main_target_activity] + other_activities
+                rules = get_decision_mining_rules_given_activities(log, target_activities, parameters=parameters)
         for n in gateway_map[gw]["edges"]:
             if n in rules:
                 rules_per_edge[gateway_map[gw]["edges"][n]["edge"]] = rules[n]
     return rules_per_edge
 
+
+def get_other_activities_connected_to_source(log, source_activity, main_target_activity, parameters=None):
+    """
+    Gets the other activities connected to the source activity
+
+    Parameters
+    ------------
+    log
+        Trace log
+    source_activity
+        Source activity
+    main_target_activity
+        Main target activity
+    parameters
+        Possible parameters of the algorithm
+
+    Returns
+    ------------
+    other_activities
+        Other activities connected to the source
+    """
+    other_activities = []
+    dfgk = list(dfg_factory.apply(log, parameters=parameters).keys())
+    for key in dfgk:
+        if key[0] == source_activity:
+            target_activity = key[1]
+            if not target_activity == main_target_activity:
+                other_activities.append(target_activity)
+    return other_activities
 
 def get_decision_mining_rules_given_activities(log, activities, parameters=None):
     """

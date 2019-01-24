@@ -44,7 +44,7 @@ def get_gateway_map(bpmn_graph):
                 gateway_nodes = [x for x in node_outgoing if "gateway" in x["type"].lower()]
                 other_nodes = [x for x in node_outgoing if x not in task_nodes and x not in gateway_nodes]
                 if len(other_nodes) == 0 and task_nodes:
-                    if gateway_nodes and len(gateway_nodes) == 1 and len(task_nodes) == 1:
+                    if gateway_nodes and len(task_nodes) == 1:
                         gateway_map[n] = {"type": "gateway", "source": incoming_tasks[0]["node_name"], "edges": {}}
                         for task in task_nodes:
                             gateway_map[n]["edges"][task["node_name"]] = {"edge": task["incoming"][0], "rules": []}
