@@ -97,7 +97,7 @@ setup(
         'cvxopt',
         'lxml',
         'graphviz',
-        'pandas',
+        'pandas==0.23.4',
         'scipy',
         'scikit-learn',
         'pydotplus',
