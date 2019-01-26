@@ -11,3 +11,4 @@ scipy
 pydotplus
 bpmn_python==0.0.18
 scikit-learn
+pulp
