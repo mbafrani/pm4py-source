@@ -12,4 +12,4 @@ RUN pip install pydotplus==2.0.2 bpmn_python==0.0.18
 
 RUN pip install pulp==1.6.9
 COPY . /app
-RUN cd /app && cp tests/test_dockers/setups/setup_master.py setup.py && python setup.py install
+RUN cd /app && cp tests/test_dockers/setups/setup_bpmnIntegration2.py setup.py && python setup.py install
