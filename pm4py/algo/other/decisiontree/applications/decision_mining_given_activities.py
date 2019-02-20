@@ -5,8 +5,7 @@ from copy import deepcopy
 import numpy as np
 
 from pm4py.algo.discovery.dfg import factory as dfg_factory
-from pm4py.algo.other.decisiontree import get_log_representation
-from pm4py.algo.other.decisiontree import log_transforming
+from pm4py.objects.log.util import get_log_representation, get_prefixes
 from pm4py.algo.other.decisiontree import mine_decision_tree
 from pm4py.objects.bpmn.util import gateway_map as gwmap_builder
 from pm4py.objects.bpmn.util import log_matching
@@ -202,8 +201,8 @@ def perform_decision_mining_given_activities(log, activities, parameters=None):
 
     max_diff_targets = parameters["max_diff_targets"] if "max_diff_targets" in parameters else 9999999999
 
-    list_logs, considered_activities = log_transforming.get_log_traces_to_activities(log, activities,
-                                                                                     parameters=parameters)
+    list_logs, considered_activities = get_prefixes.get_log_traces_to_activities(log, activities,
+                                                                                 parameters=parameters)
 
     classes = considered_activities
     target = []
