@@ -29,6 +29,8 @@ if __name__ == "__main__":
     from examples import big_dataframe_filtering
     from examples import big_dataframe_management
     from examples import graphs_visualization
+    from examples import tree_activity_duration_root_cause
+    from examples import tree_dec_mining_wo_replay
 
     print("\n\nbig_log_imdf_decor frequency")
     big_log_imdf_decor.execute_script(variant="frequency")
@@ -80,3 +82,8 @@ if __name__ == "__main__":
     example_simulation.execute_script()
     print("\n\ngraphs_visualization")
     graphs_visualization.execute_script()
+    print("\n\ntree_activity_duration_root_cause")
+    tree_activity_duration_root_cause.execute_script()
+    print("\n\ntree_dec_mining_wo_replay")
+    tree_dec_mining_wo_replay.execute_script()
+
