@@ -186,7 +186,7 @@ def get_all_casedurations(log, parameters=None):
     if parameters is None:
         parameters = {}
     
-    to_sort = parameters["sorted"] if "sorted" in parameters else True
+    to_sort = parameters["sorted"] if "sorted" in parameters else False
     cases = get_cases_description(log, parameters=parameters)
     duration_values = [x["caseDuration"] for x in cases.values()]
 
@@ -210,6 +210,9 @@ def get_first_quartile_caseduration(log, parameters=None):
     value
         First quartile value
     """
+    if parameters is None:
+        parameters = {}
+    parameters["sorted"] = True
     duration_values = get_all_casedurations(log, parameters=parameters)
     if duration_values:
         return duration_values[int((len(duration_values) * 3) / 4)]
@@ -232,6 +235,9 @@ def get_median_caseduration(log, parameters=None):
     value
         Median duration value
     """
+    if parameters is None:
+        parameters = {}
+    parameters["sorted"] = True
     duration_values = get_all_casedurations(log, parameters=parameters)
     if duration_values:
         return duration_values[int(len(duration_values) / 2)]
@@ -257,6 +263,9 @@ def get_kde_caseduration(log, parameters=None):
     y
         Y-axis values to represent
     """
+    if parameters is None:
+        parameters = {}
+    parameters["sorted"] = True
     return case_duration_commons.get_kde_caseduration(get_all_casedurations(log, parameters=parameters),
                                                       parameters=parameters)
 
