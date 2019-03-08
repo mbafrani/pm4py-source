@@ -18,7 +18,7 @@ def train(log, parameters=None):
         str_ev_attr.append(activity_key)
     str_evsucc_attr = [activity_key]
 
-    ext_log = get_log_with_log_prefixes(log)
+    ext_log, change_indexes = get_log_with_log_prefixes(log)
     data, feature_names = get_log_representation.get_representation(ext_log, str_tr_attr, str_ev_attr, num_tr_attr,
                                                                     num_ev_attr, str_evsucc_attr=str_evsucc_attr)
     case_durations = case_statistics.get_all_casedurations(ext_log, parameters=parameters)
