@@ -186,11 +186,11 @@ def get_all_casedurations(log, parameters=None):
     if parameters is None:
         parameters = {}
     
-    sorted = parameters["sorted"] if "sorted" in parameters else True
+    to_sort = parameters["sorted"] if "sorted" in parameters else True
     cases = get_cases_description(log, parameters=parameters)
     duration_values = [x["caseDuration"] for x in cases.values()]
 
-    if sorted:
+    if to_sort:
         return sorted(duration_values)
     return duration_values
 
