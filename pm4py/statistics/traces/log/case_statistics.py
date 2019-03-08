@@ -183,11 +183,13 @@ def get_all_casedurations(log, parameters=None):
     duration_values
         List of all duration values
     """
+    sorted = parameters["sorted"] if "sorted" in parameters else True
     cases = get_cases_description(log, parameters=parameters)
     duration_values = [x["caseDuration"] for x in cases.values()]
 
-    return sorted(duration_values)
-
+    if sorted:
+        return sorted(duration_values)
+    return duration_values
 
 def get_first_quartile_caseduration(log, parameters=None):
     """
