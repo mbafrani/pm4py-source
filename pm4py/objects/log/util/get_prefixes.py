@@ -22,10 +22,14 @@ def get_log_with_log_prefixes(log, parameters=None):
     -------------
     all_prefixes_log
         Log with all the prefixes
+    change_indexes
+        Indexes of the extended log where there was a change between cases
     """
     all_prefixes_log = EventLog()
+    change_indexes = []
 
     for trace in log:
+        change_indexes.append(len(all_prefixes_log))
         cumulative_trace = Trace()
         for event in trace:
             cumulative_trace.append(event)
