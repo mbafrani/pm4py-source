@@ -183,6 +183,9 @@ def get_all_casedurations(log, parameters=None):
     duration_values
         List of all duration values
     """
+    if parameters is None:
+        parameters = {}
+    
     sorted = parameters["sorted"] if "sorted" in parameters else True
     cases = get_cases_description(log, parameters=parameters)
     duration_values = [x["caseDuration"] for x in cases.values()]
