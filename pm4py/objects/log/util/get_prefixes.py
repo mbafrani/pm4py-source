@@ -35,7 +35,7 @@ def get_log_with_log_prefixes(log, parameters=None):
             cumulative_trace.append(event)
             all_prefixes_log.append(copy(cumulative_trace))
     
-    return all_prefixes_log
+    return all_prefixes_log, change_indexes
 
 
 def get_log_traces_to_activities(log, activities, parameters=None):
