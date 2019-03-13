@@ -4,6 +4,7 @@ import numpy as np
 from keras.layers.core import Dense, Activation
 from keras.layers.recurrent import LSTM
 from keras.models import Sequential
+from keras.callbacks import EarlyStopping
 
 from pm4py.algo.filtering.log.attributes import attributes_filter
 from pm4py.objects.log.util import get_log_representation
@@ -12,6 +13,8 @@ from pm4py.objects.log.util import xes
 from pm4py.objects.log.util.get_prefixes import get_log_with_log_prefixes
 from pm4py.statistics.traces.log import case_statistics
 from pm4py.util import constants
+import json
+import math
 
 
 def get_trace_rep_rnn(trace, dictionary_features, str_ev_attr, str_evsucc_attr, max_len_trace):
@@ -75,6 +78,20 @@ def group_remaining_time(change_indexes, remaining_time, max_len_trace):
     return rem_time_grouped
 
 
+def normalize_remaining_time(rem_time_grouped):
+    ret = []
+    max_value = -10000000
+    for lst in rem_time_grouped:
+        max_lst = max(lst)
+        max_value = max(max_value, max_lst)
+    log_max_value = math.log(1.0 + max_value)
+    for lst in rem_time_grouped:
+        ret.append([])
+        for val in lst:
+            ret[-1].append(-1.0 + 2.0 * (math.log(val + 1.0)/log_max_value))
+    return ret, log_max_value
+
+
 def train(log, parameters=None):
     if parameters is None:
         parameters = {}
@@ -100,7 +117,6 @@ def train(log, parameters=None):
         dictionary_features[value] = index
 
     ext_log, change_indexes = get_log_with_log_prefixes(log)
-    print("max_len_trace = ", max_len_trace)
 
     case_durations = case_statistics.get_all_casedurations(ext_log, parameters=parameters)
 
@@ -109,33 +125,29 @@ def train(log, parameters=None):
     remaining_time = [-case_durations[i] + case_durations[change_indexes_flattened[i]] for i in
                       range(len(case_durations))]
 
-    y_train = np.array(group_remaining_time(change_indexes, remaining_time, max_len_trace))
-    # X_train = np.asarray(X_train).reshape((y_train.shape[0], len(feature_names), len(X_train)/()))
-    X_train = np.array(X_train)
-    print(X_train)
-    print(y_train)
+    y_train = group_remaining_time(change_indexes, remaining_time, max_len_trace)
+    y_train, log_max_value = normalize_remaining_time(y_train)
+    y_train = np.array(y_train)
 
-    print(X_train.shape)
-    print(y_train.shape)
-    print(len(ext_log))
-    input()
+    X_train = np.array(X_train)
 
     in_out_neurons =  X_train.shape[2]
-    hidden_neurons = in_out_neurons * 10
+    hidden_neurons = 100
     input_shape = (X_train.shape[1], X_train.shape[2])
-
-    print("in_out_neurons = ",in_out_neurons)
-
-    print(input_shape)
 
     model = Sequential()
     model.add(LSTM(hidden_neurons, return_sequences=False, input_shape=input_shape))
     model.add(Dense(in_out_neurons))
     model.add(Activation("linear"))
+
+    #es = EarlyStopping(monitor='val_loss', patience=10)
+
     model.compile(loss="mean_squared_error", optimizer="rmsprop")
 
-    model.fit(X_train, y_train, batch_size=700, nb_epoch=100, validation_split=0.05)
-
+    model.fit(X_train, y_train, batch_size=X_train.shape[1], nb_epoch=100, validation_split=0.2)
+    vv = model.predict(X_train)
+    print(vv)
+    print(y_train)
 
 def test(model, obj, parameters=None):
     if parameters is None:
