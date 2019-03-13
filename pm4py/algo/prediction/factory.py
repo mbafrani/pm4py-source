@@ -1,3 +1,5 @@
+import joblib
+
 from pm4py.algo.prediction.versions import elasticnet, keras_rnn
 
 ELASTICNET = "elasticnet"
@@ -47,3 +49,34 @@ def test(model, trace, parameters=None):
     """
     variant = model["variant"]
     return VERSIONS_TEST[variant](model, trace, parameters=parameters)
+
+
+def save(model, filename):
+    """
+    Saves a model
+
+    Parameters
+    -------------
+    model
+        Prediction model
+    filename
+        Name of the file where to save the model
+    """
+    joblib.dump(model, filename, compress=3)
+
+
+def load(filename):
+    """
+    Loads a model
+
+    Parameters
+    -------------
+    filename
+        Name of the file where the model is saved
+
+    Returns
+    -------------
+    model
+        Prediction model
+    """
+    return joblib.load(filename)
