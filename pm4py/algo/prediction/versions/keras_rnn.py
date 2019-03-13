@@ -250,7 +250,7 @@ def train(log, parameters=None):
     return {"str_tr_attr": str_tr_attr, "str_ev_attr": str_ev_attr, "num_tr_attr": num_tr_attr,
             "num_ev_attr": num_ev_attr, "str_evsucc_attr": str_evsucc_attr, "feature_names": feature_names,
             "remaining_time": remaining_time, "regr": model, "max_len_trace": max_len_trace,
-            "log_max_value": log_max_value}
+            "log_max_value": log_max_value, "variant": "keras_rnn"}
 
 
 def test(model, obj, parameters=None):

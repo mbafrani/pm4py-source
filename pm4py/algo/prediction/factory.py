@@ -18,7 +18,7 @@ def train(log, variant=ELASTICNET, parameters=None):
     parameters
         Possible parameters of the algorithm
     variant
-        Variant of the algorithm, possible values: elasticnet
+        Variant of the algorithm, possible values: elasticnet, keras_rnn
     Returns
     ------------
     model
