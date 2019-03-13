@@ -1,9 +1,10 @@
-from pm4py.algo.prediction.versions import elasticnet
+from pm4py.algo.prediction.versions import elasticnet, keras_rnn
 
 ELASTICNET = "elasticnet"
+KERAS_RNN = "keras_rnn"
 
-VERSIONS_TRAIN = {ELASTICNET: elasticnet.train}
-VERSIONS_TEST = {ELASTICNET: elasticnet.test}
+VERSIONS_TRAIN = {ELASTICNET: elasticnet.train, KERAS_RNN: keras_rnn.train}
+VERSIONS_TEST = {ELASTICNET: elasticnet.test, KERAS_RNN: keras_rnn.test}
 
 
 def train(log, variant=ELASTICNET, parameters=None):
