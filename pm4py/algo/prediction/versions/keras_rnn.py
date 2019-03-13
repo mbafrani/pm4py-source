@@ -16,10 +16,26 @@ from pm4py.statistics.traces.log import case_statistics
 from pm4py.util import constants
 
 
-def get_trace_rep_rnn(trace, dictionary_features, str_ev_attr, str_evsucc_attr, max_len_trace):
+def get_trace_rep_rnn(trace, dictionary_features, max_len_trace):
+    """
+    Gets a trace representation for RNN training
+
+    Parameters
+    ------------
+    trace
+        Trace
+    dictionary_features
+        Ordered dictionary of features
+    max_len_trace
+        Maximum length of the trace in the log
+
+    Returns
+    ------------
+    X
+        double list that contains the value for each feature for each event of the trace
+    """
     X = []
     for index, event in enumerate(trace):
-        added = False
         ev_vector = [0] * len(dictionary_features)
         for attribute_name in event:
             attribute_value = event[attribute_name]
@@ -47,17 +63,78 @@ def get_trace_rep_rnn(trace, dictionary_features, str_ev_attr, str_evsucc_attr, 
     return X
 
 
-def get_log_rep_rnn(log, dictionary_features, str_ev_attr, str_evsucc_attr, max_len_trace):
-    X_train = []
-    for trace in log:
-        rep = get_trace_rep_rnn(trace, dictionary_features, str_ev_attr, str_evsucc_attr, max_len_trace)
-        if rep:
-            X_train.append(rep)
+def get_log_rep_rnn(log, dictionary_features, max_len_trace):
+    """
+    Gets a log representation for RNN training
 
-    return X_train
+    Parameters
+    -------------
+    log
+        Log
+    dictionary_features
+        Ordered dictionary of features
+    max_len_trace
+        Maximum length of the trace in the log
+
+    Returns
+    -------------
+    X
+        triple list that describes the log
+    """
+    X = []
+    for trace in log:
+        rep = get_trace_rep_rnn(trace, dictionary_features, max_len_trace)
+        if rep:
+            X.append(rep)
+
+    return X
+
+
+def get_X_from_log(log, feature_names, max_len_trace):
+    """
+    Gets the eventual X matrix for a given log
+
+    Parameters
+    -------------
+    log
+        Log
+    feature_names
+        List of features contained in the log
+    max_len_trace
+        Maximum length of the trace in the log
+
+    Returns
+    -------------
+    X
+        3D matrix that describes the log
+    """
+    dictionary_features = {}
+    for index, value in enumerate(feature_names):
+        dictionary_features[value] = index
+    X = get_log_rep_rnn(log, dictionary_features, max_len_trace)
+    X = np.array(X)
+
+    return X
 
 
 def group_remaining_time(change_indexes, remaining_time, max_len_trace):
+    """
+    Groups the remaining time of the extended log according to the change indexes
+
+    Parameters
+    -------------
+    change_indexes
+        Change indexes between cases in the extended log
+    remaining_time
+        List of the remaining times
+    max_len_trace
+        Maximum length of the trace in the log
+
+    Returns
+    -------------
+    rem_time_grouped
+        Remaining time grouped by case
+    """
     rem_time_grouped = []
     j = 0
     for ct in change_indexes:
@@ -78,6 +155,19 @@ def group_remaining_time(change_indexes, remaining_time, max_len_trace):
 
 
 def normalize_remaining_time(rem_time_grouped):
+    """
+    Normalize the remaining time using logarithmic function
+
+    Parameters
+    -------------
+    rem_time_grouped
+        Remaining time grouped by case
+
+    Returns
+    -------------
+    normalized_rem_time
+        Normalized remaining time
+    """
     ret = []
     max_value = -10000000
     for lst in rem_time_grouped:
@@ -92,22 +182,37 @@ def normalize_remaining_time(rem_time_grouped):
 
 
 def reconstruct_value(y, log_max_value):
+    """
+    Reconstruct the value to return in test phase
+
+    Parameters
+    -------------
+    y
+        Logarithmic value predicted by the algorithm
+    log_max_value
+        Logarithm of the maximum value
+
+    Returns
+    -------------
+    rec_value
+        Reconstructed value
+    """
     if y < -1:
         y = -1
     return math.exp((y + 1.0) / 2.0 * log_max_value) - 1
 
 
-def get_X_from_log(log, feature_names, str_ev_attr, str_evsucc_attr, max_len_trace):
-    dictionary_features = {}
-    for index, value in enumerate(feature_names):
-        dictionary_features[value] = index
-    X = get_log_rep_rnn(log, dictionary_features, str_ev_attr, str_evsucc_attr, max_len_trace)
-    X = np.array(X)
-
-    return X
-
-
 def train(log, parameters=None):
+    """
+    Train the model
+
+    Parameters
+    -------------
+    log
+        Log
+    parameters
+        Possible parameters of the algorithm, including default_epochs
+    """
     if parameters is None:
         parameters = {}
     default_epochs = parameters["default_epochs"] if "default_epochs" in parameters else 15
@@ -132,7 +237,7 @@ def train(log, parameters=None):
     str_evsucc_attr = [activity_key]
     data, feature_names = get_log_representation.get_representation(log, str_tr_attr, str_ev_attr, num_tr_attr,
                                                                     num_ev_attr, str_evsucc_attr=str_evsucc_attr)
-    X = get_X_from_log(log, feature_names, str_ev_attr, str_evsucc_attr, max_len_trace)
+    X = get_X_from_log(log, feature_names, max_len_trace)
     in_out_neurons = X.shape[2]
     hidden_neurons = int(in_out_neurons * 7.5)
     input_shape = (X.shape[1], X.shape[2])
@@ -149,10 +254,25 @@ def train(log, parameters=None):
 
 
 def test(model, obj, parameters=None):
+    """
+    Test the model
+
+    Parameters
+    -------------
+    model
+        Model obtained by Keras
+    obj
+        Object to test (log/trace)
+    parameters
+        Possible parameters of the algorithm
+
+    Returns
+    -------------
+    pred
+        Result of the prediction (single value / list)
+    """
     if parameters is None:
         parameters = {}
-    str_ev_attr = model["str_ev_attr"]
-    str_evsucc_attr = model["str_evsucc_attr"]
     feature_names = model["feature_names"]
     regr = model["regr"]
     max_len_trace = model["max_len_trace"]
@@ -165,7 +285,12 @@ def test(model, obj, parameters=None):
     if max_len_trace_test_log > max_len_trace:
         raise Exception(
             "cannot predict when the maximum length of the test log is greater than the maximum length of the training log")
-    X = get_X_from_log(log, feature_names, str_ev_attr, str_evsucc_attr, max_len_trace)
+    X = get_X_from_log(log, feature_names, max_len_trace)
     y = regr.predict(X)
     if len(log) == 1:
         return reconstruct_value(y[0][len(log[0]) - 1], log_max_value)
+    else:
+        ret = []
+        for index, trace in enumerate(log):
+            ret.append(reconstruct_value(y[index][len(trace)-1], log_max_value))
+        return ret
