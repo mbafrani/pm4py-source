@@ -111,7 +111,10 @@ setup(
         'pydotplus',
         'bpmn_python==0.0.18',
         'pulp',
-        'pytz>=2018.9'
+        'pytz>=2018.9',
+        'keras',
+        'tensorflow',
+        'joblib'
     ],
     project_urls={
         'Documentation': 'http://pm4py.pads.rwth-aachen.de/documentation/',
