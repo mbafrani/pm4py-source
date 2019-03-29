@@ -3,6 +3,8 @@ import uuid
 from pm4py.objects.petri import utils
 from pm4py.objects.petri.petrinet import PetriNet, Marking
 
+from pm4py.objects.petri.reduction import reduce
+
 
 def remove_unconnected_places(net):
     """
@@ -124,6 +126,8 @@ def apply(bpmn_graph, parameters=None):
     """
     if parameters is None:
         parameters = {}
+    enable_reduction = parameters["enable_reduction"] if "enable_reduction" in parameters else False
+
     del parameters
     net = PetriNet("converted_net")
     nodes = bpmn_graph.get_nodes()
@@ -248,5 +252,8 @@ def apply(bpmn_graph, parameters=None):
 
     for el in elements_correspondence:
         el_corr_keys_map[str(el)] = el
+
+    if enable_reduction:
+        net = reduce(net)
 
     return net, initial_marking, final_marking, elements_correspondence, inv_elements_correspondence, el_corr_keys_map
