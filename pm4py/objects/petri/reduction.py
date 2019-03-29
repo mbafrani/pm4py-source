@@ -27,13 +27,15 @@ def reduce1(net):
                 source_place = source_places[0]
                 target_place = target_places[0]
                 target_trans = target_transes[0]
-                if trans.label is None and len(target_place.in_arcs) == 1 and len(target_trans.in_arcs) == 1 and len(
+                #target_places2 = [arc.target for arc in target_trans.out_arcs]
+                if len(target_place.in_arcs) == 1 and len(target_trans.in_arcs) == 1 and len(
                         target_trans.out_arcs) == 1:
-                    #if target_trans.label is None:
-                    net = remove_transition(net, trans)
-                    net = remove_place(net, target_place)
-                    add_arc_from_to(source_place, target_trans, net)
-                    something_changed = True
+                    if trans.label is None:
+                        net = remove_transition(net, trans)
+                        net = remove_place(net, target_place)
+                        add_arc_from_to(source_place, target_trans, net)
+                        something_changed = True
+                        continue
     return net
 
 
