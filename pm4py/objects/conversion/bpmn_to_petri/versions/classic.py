@@ -194,23 +194,23 @@ def apply(bpmn_graph, parameters=None):
                 net.places.add(place)
                 corresponding_in_nodes[node_id] = []
                 corresponding_out_nodes[node_id] = []
+                htrans = PetriNet.Transition(str(uuid.uuid4()), None)
+                net.transitions.add(htrans)
+                utils.add_arc_from_to(htrans, place, net)
                 for edge in node[1]['incoming']:
                     str(edge)
-                    htrans = PetriNet.Transition(str(uuid.uuid4()), None)
-                    net.transitions.add(htrans)
                     hplace = PetriNet.Place(str(uuid.uuid4()))
                     net.places.add(hplace)
                     utils.add_arc_from_to(hplace, htrans, net)
-                    utils.add_arc_from_to(htrans, place, net)
                     corresponding_in_nodes[node_id].append(hplace)
+                htrans = PetriNet.Transition(str(uuid.uuid4()), None)
+                net.transitions.add(htrans)
+                utils.add_arc_from_to(place, htrans, net)
                 for edge in node[1]['outgoing']:
                     str(edge)
-                    htrans = PetriNet.Transition(str(uuid.uuid4()), None)
-                    net.transitions.add(htrans)
                     hplace = PetriNet.Place(str(uuid.uuid4()))
                     net.places.add(hplace)
                     utils.add_arc_from_to(htrans, hplace, net)
-                    utils.add_arc_from_to(place, htrans, net)
                     corresponding_out_nodes[node_id].append(hplace)
             else:
                 input_place = PetriNet.Place('i_' + node_id)
