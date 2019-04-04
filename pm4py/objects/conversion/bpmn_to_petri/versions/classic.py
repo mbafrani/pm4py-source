@@ -245,7 +245,7 @@ def apply(bpmn_graph, parameters=None):
             trans = PetriNet.Transition(node_id, None)
             net.transitions.add(trans)
             corresponding_in_nodes[node_id] = [input_place]
-            corresponding_in_nodes[node_id] = [output_place]
+            corresponding_out_nodes[node_id] = [output_place]
             utils.add_arc_from_to(input_place, trans, net)
             utils.add_arc_from_to(trans, output_place, net)
         if "task" in node_type:
