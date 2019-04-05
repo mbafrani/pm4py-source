@@ -179,7 +179,7 @@ def apply(bpmn_graph, parameters=None):
         node_name = node[1]['node_name'].replace("\r", " ").replace("\n", " ").strip() if 'node_name' in node[
             1] else None
         node_type = node[1]['type'].lower()
-        node_process = node[1]['process'].lower()
+        node_process = node[1]['process']
         trans = None
         if "task" in node_type:
             trans = PetriNet.Transition(node_id, node_name)
@@ -228,14 +228,18 @@ def apply(bpmn_graph, parameters=None):
             net.places.add(source_place)
             corresponding_in_nodes[node_id] = [source_place]
             corresponding_out_nodes[node_id] = [source_place]
-            #print("0000",node_id, node_process)
+            if node_process not in corresponding_in_nodes:
+                corresponding_in_nodes[node_process] = []
+            corresponding_in_nodes[node_process].append(source_place)
             start_event_subprocess[node_process] = source_place
         elif node_type == "endevent":
             sink_place = PetriNet.Place(node_id)
             net.places.add(sink_place)
             corresponding_in_nodes[node_id] = [sink_place]
             corresponding_out_nodes[node_id] = [sink_place]
-            #print("1111",node_id, node_process)
+            if node_process not in corresponding_out_nodes:
+                corresponding_out_nodes[node_process] = []
+            corresponding_out_nodes[node_process].append(sink_place)
             end_event_subprocess[node_process] = sink_place
         elif "event" in node_type:
             input_place = PetriNet.Place('i_' + node_id)
@@ -257,17 +261,7 @@ def apply(bpmn_graph, parameters=None):
             corresponding_out_nodes[node_id] = [output_place]
             utils.add_arc_from_to(input_place, trans, net)
             utils.add_arc_from_to(trans, output_place, net)
-    # iterate again for subprocesses
-    for node in nodes:
-        node_id = node[1]['id']
-        node_type = node[1]['type'].lower()
-        #node_process = node[1]['process'].lower()
-        if node_type == "subprocess":
-            #print(start_event_subprocess, end_event_subprocess, node_id, node_process)
-            if node_id in start_event_subprocess and node_id in end_event_subprocess:
-                #print("AAAAA",node_id)
-                corresponding_in_nodes[node_id] = [start_event_subprocess[node_id]]
-                corresponding_out_nodes[node_id] = [end_event_subprocess[node_id]]
+
     flows = bpmn_graph.get_flows()
     for flow in flows:
         flow_id = flow[2]['id']
