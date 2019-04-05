@@ -226,17 +226,32 @@ def apply(bpmn_graph, parameters=None):
             elif "inclusivegateway" in node_type:
                 input_place = PetriNet.Place('i_' + node_id)
                 net.places.add(input_place)
-                corresponding_in_nodes[node_id] = [input_place] * len(node[1]['incoming'])
+                corresponding_in_nodes[node_id] = []
+                added_places_input = []
+                for edge in node[1]['incoming']:
+                    str(edge)
+                    hplace = PetriNet.Place(str(uuid.uuid4()))
+                    net.places.add(hplace)
+                    added_places_input.append(hplace)
+                    corresponding_in_nodes[node_id].append(hplace)
+                for i in range(1, len(added_places_input)+1):
+                    subsets = findsubsets(set(added_places_input), i)
+                    for subset in subsets:
+                        htrans = PetriNet.Transition(str(uuid.uuid4()), None)
+                        net.transitions.add(htrans)
+                        utils.add_arc_from_to(htrans, input_place, net)
+                        for place in subset:
+                            utils.add_arc_from_to(place, htrans, net)
                 corresponding_out_nodes[node_id] = []
-                added_places = []
+                added_places_output = []
                 for edge in node[1]['outgoing']:
                     str(edge)
                     hplace = PetriNet.Place(str(uuid.uuid4()))
                     net.places.add(hplace)
-                    added_places.append(hplace)
+                    added_places_output.append(hplace)
                     corresponding_out_nodes[node_id].append(hplace)
-                for i in range(1, len(added_places)+1):
-                    subsets = findsubsets(set(added_places), i)
+                for i in range(1, len(added_places_output)+1):
+                    subsets = findsubsets(set(added_places_output), i)
                     for subset in subsets:
                         htrans = PetriNet.Transition(str(uuid.uuid4()), None)
                         net.transitions.add(htrans)
