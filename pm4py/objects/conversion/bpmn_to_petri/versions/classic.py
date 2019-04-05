@@ -268,29 +268,50 @@ def apply(bpmn_graph, parameters=None):
                 corresponding_in_nodes[node_id] = [input_place] * len(node[1]['incoming'])
                 corresponding_out_nodes[node_id] = [output_place] * len(node[1]['outgoing'])
         elif node_type == "startevent":
-            source_place = PetriNet.Place(node_id)
-            net.places.add(source_place)
-            corresponding_in_nodes[node_id] = [source_place]
-            corresponding_out_nodes[node_id] = [source_place]
+            source_place_source = PetriNet.Place(node_id)
+            net.places.add(source_place_source)
+            corresponding_in_nodes[node_id] = [source_place_source]
             if node_process not in corresponding_in_nodes:
                 corresponding_in_nodes[node_process] = []
-            corresponding_in_nodes[node_process].append(source_place)
-            start_event_subprocess[node_process] = source_place
+            corresponding_in_nodes[node_process].append(source_place_source)
+            start_event_subprocess[node_process] = source_place_source
+            if not node_id == node_name:
+                trans = PetriNet.Transition("stt_"+node_id, node_name)
+                net.transitions.add(trans)
+                source_place_target = PetriNet.Place("stp_"+node_id)
+                net.places.add(source_place_target)
+                utils.add_arc_from_to(source_place_source, trans, net)
+                utils.add_arc_from_to(trans, source_place_target, net)
+                corresponding_out_nodes[node_id] = [source_place_target]
+            else:
+                corresponding_out_nodes[node_id] = [source_place_source]
         elif node_type == "endevent":
-            sink_place = PetriNet.Place(node_id)
-            net.places.add(sink_place)
-            corresponding_in_nodes[node_id] = [sink_place]
-            corresponding_out_nodes[node_id] = [sink_place]
+            sink_place_target = PetriNet.Place(node_id)
+            net.places.add(sink_place_target)
+            corresponding_out_nodes[node_id] = [sink_place_target]
             if node_process not in corresponding_out_nodes:
                 corresponding_out_nodes[node_process] = []
-            corresponding_out_nodes[node_process].append(sink_place)
-            end_event_subprocess[node_process] = sink_place
+            corresponding_out_nodes[node_process].append(sink_place_target)
+            end_event_subprocess[node_process] = sink_place_target
+            if not node_id == node_name:
+                trans = PetriNet.Transition("ett_"+node_id, node_name)
+                net.transitions.add(trans)
+                sink_place_source = PetriNet.Place("etp_"+node_id)
+                net.places.add(sink_place_source)
+                utils.add_arc_from_to(sink_place_source, trans, net)
+                utils.add_arc_from_to(trans, sink_place_target, net)
+                corresponding_in_nodes[node_id] = [sink_place_source]
+            else:
+                corresponding_in_nodes[node_id] = [sink_place_target]
         elif "event" in node_type:
             input_place = PetriNet.Place('i_' + node_id)
             net.places.add(input_place)
             output_place = PetriNet.Place('o_' + node_id)
             net.places.add(output_place)
-            trans = PetriNet.Transition(node_id, None)
+            if not node_id == node_name:
+                trans = PetriNet.Transition(node_id, node_name)
+            else:
+                trans = PetriNet.Transition(node_id, None)
             net.transitions.add(trans)
             corresponding_in_nodes[node_id] = [input_place]
             corresponding_out_nodes[node_id] = [output_place]
@@ -334,5 +355,5 @@ def apply(bpmn_graph, parameters=None):
         net = reduce(net)
         net, initial_marking = remove_places_im_that_go_to_fm_through_hidden(net, initial_marking, final_marking)
     net, initial_marking = get_initial_marking(net)
-    
+
     return net, initial_marking, final_marking, elements_correspondence, inv_elements_correspondence, el_corr_keys_map
