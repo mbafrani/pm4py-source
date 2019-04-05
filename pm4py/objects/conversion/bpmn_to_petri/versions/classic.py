@@ -1,46 +1,9 @@
+import itertools
 import uuid
 
 from pm4py.objects.petri import utils
 from pm4py.objects.petri.petrinet import PetriNet, Marking
 from pm4py.objects.petri.reduction import reduce
-
-
-def remove_places_im_that_go_to_fm_through_hidden(net, im, fm):
-    """
-    Remove useless places in the initial marking, that go directly
-    to the final marking through invisible transitions
-
-    Parameters
-    ------------
-    net
-        Petri net
-    im
-        Initial marking
-    fm
-        Final marking
-
-    Returns
-    -------------
-    net
-        Petri net
-    im
-        Initial marking
-    """
-    im_places = list(im.keys())
-    for place in im_places:
-        target_transes = [arc.target for arc in place.out_arcs]
-        target_places = [arc.target for trans in target_transes for arc in trans.out_arcs]
-        if len(target_transes) == 1 and len(target_places) == 1:
-            target_trans = target_transes[0]
-            target_trans_sources = [arc.source for arc in target_trans.in_arcs]
-            if len(target_trans_sources) == 1:
-                target_places_in_fm = [place for place in target_places if place in fm]
-                if len(target_places) == len(target_places_in_fm):
-                    utils.remove_place(net, place)
-                    utils.remove_transition(net, target_trans)
-                    del im[place]
-    return net, im
-
 
 def remove_unconnected_places(net):
     """
@@ -64,32 +27,26 @@ def remove_unconnected_places(net):
     return net
 
 
-def get_initial_marking_wo_changing_net(net):
+def findsubsets(s, n):
     """
-    Get the initial marking from a Petri net
-    (observing which nodes are without input connection)
+    Find subsets of size n of a set s
 
     Parameters
-    -----------
-    net
-        Petri net
+    ------------
+    s
+        Set
+    n
+        Size of the subsets that we wish to consider
 
     Returns
-    -----------
-    initial_marking
-        Initial marking
+    ------------
+    ps
+        Set of subsets
     """
-    places = set(net.places)
-    initial_marking = Marking()
-
-    for place in places:
-        if len(place.in_arcs) == 0:
-            initial_marking[place] = 1
-
-    return initial_marking
+    return list(itertools.combinations(s, n))
 
 
-def get_initial_marking(net):
+def get_initial_marking(net, max_no_comb=4):
     """
     Get the initial marking from a Petri net
     (observing which nodes are without input connection,
@@ -113,6 +70,7 @@ def get_initial_marking(net):
     for place in places:
         if len(place.in_arcs) == 0:
             places_wo_input.append(place)
+    places_wo_input = set(places_wo_input)
 
     itranscount = 0
     initial_marking = Marking()
@@ -120,19 +78,22 @@ def get_initial_marking(net):
     if len(places_wo_input) > 1:
         source = PetriNet.Place('petri_source')
         net.places.add(source)
-        for place in places_wo_input:
-            itranscount = itranscount + 1
-            htrans = PetriNet.Transition("itrans_" + str(itranscount), None)
-            net.transitions.add(htrans)
-            utils.add_arc_from_to(source, htrans, net)
-            utils.add_arc_from_to(htrans, place, net)
+        for i in range(1, min(len(places_wo_input) + 1, max_no_comb)):
+            comb = findsubsets(places_wo_input, i)
+            for c in comb:
+                itranscount = itranscount + 1
+                htrans = PetriNet.Transition("itrans_" + str(itranscount), None)
+                net.transitions.add(htrans)
+                utils.add_arc_from_to(source, htrans, net)
+                for p in c:
+                    utils.add_arc_from_to(htrans, p, net)
         initial_marking[source] = 1
     elif len(places_wo_input) == 1:
         initial_marking[places_wo_input[0]] = 1
     return net, initial_marking
 
 
-def get_final_marking(net):
+def get_final_marking(net, max_no_comb=4):
     """
     Get the final marking from a Petri net
     (observing which nodes are without output connection,
@@ -155,18 +116,22 @@ def get_final_marking(net):
     for place in places:
         if len(place.out_arcs) == 0:
             places_wo_output.append(place)
+    places_wo_output = set(places_wo_output)
 
     ftranscount = 0
     final_marking = Marking()
     if len(places_wo_output) > 1:
         sink = PetriNet.Place('petri_sink')
         net.places.add(sink)
-        for place in places_wo_output:
-            ftranscount = ftranscount + 1
-            htrans = PetriNet.Transition("ftrans_" + str(ftranscount), None)
-            net.transitions.add(htrans)
-            utils.add_arc_from_to(place, htrans, net)
-            utils.add_arc_from_to(htrans, sink, net)
+        for i in range(1, min(len(places_wo_output) + 1, max_no_comb)):
+            comb = findsubsets(places_wo_output, i)
+            for c in comb:
+                ftranscount = ftranscount + 1
+                htrans = PetriNet.Transition("ftrans_" + str(ftranscount), None)
+                net.transitions.add(htrans)
+                utils.add_arc_from_to(htrans, sink, net)
+                for p in c:
+                    utils.add_arc_from_to(p, htrans, net)
         final_marking[sink] = 1
     elif len(places_wo_output) == 1:
         final_marking[places_wo_output[0]] = 1
@@ -276,9 +241,9 @@ def apply(bpmn_graph, parameters=None):
             corresponding_in_nodes[node_process].append(source_place_source)
             start_event_subprocess[node_process] = source_place_source
             if not node_id == node_name:
-                trans = PetriNet.Transition("stt_"+node_id, node_name)
+                trans = PetriNet.Transition("stt_" + node_id, node_name)
                 net.transitions.add(trans)
-                source_place_target = PetriNet.Place("stp_"+node_id)
+                source_place_target = PetriNet.Place("stp_" + node_id)
                 net.places.add(source_place_target)
                 utils.add_arc_from_to(source_place_source, trans, net)
                 utils.add_arc_from_to(trans, source_place_target, net)
@@ -294,9 +259,9 @@ def apply(bpmn_graph, parameters=None):
             corresponding_out_nodes[node_process].append(sink_place_target)
             end_event_subprocess[node_process] = sink_place_target
             if not node_id == node_name:
-                trans = PetriNet.Transition("ett_"+node_id, node_name)
+                trans = PetriNet.Transition("ett_" + node_id, node_name)
                 net.transitions.add(trans)
-                sink_place_source = PetriNet.Place("etp_"+node_id)
+                sink_place_source = PetriNet.Place("etp_" + node_id)
                 net.places.add(sink_place_source)
                 utils.add_arc_from_to(sink_place_source, trans, net)
                 utils.add_arc_from_to(trans, sink_place_target, net)
@@ -345,15 +310,15 @@ def apply(bpmn_graph, parameters=None):
             inv_elements_correspondence[str(flow[2])].append(source_arc)
 
     net = remove_unconnected_places(net)
-    initial_marking = get_initial_marking_wo_changing_net(net)
-    net, final_marking = get_final_marking(net)
 
     for el in elements_correspondence:
         el_corr_keys_map[str(el)] = el
 
     if enable_reduction:
         net = reduce(net)
-        net, initial_marking = remove_places_im_that_go_to_fm_through_hidden(net, initial_marking, final_marking)
+        #net, initial_marking = remove_places_im_that_go_to_fm_through_hidden(net, initial_marking, final_marking)
+
     net, initial_marking = get_initial_marking(net)
+    net, final_marking = get_final_marking(net)
 
     return net, initial_marking, final_marking, elements_correspondence, inv_elements_correspondence, el_corr_keys_map
