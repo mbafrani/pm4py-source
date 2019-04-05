@@ -64,7 +64,7 @@ def remove_unconnected_places(net):
     return net
 
 
-def get_initial_marking(net):
+def get_initial_marking_wo_changing_net(net):
     """
     Get the initial marking from a Petri net
     (observing which nodes are without input connection)
@@ -87,6 +87,49 @@ def get_initial_marking(net):
             initial_marking[place] = 1
 
     return initial_marking
+
+
+def get_initial_marking(net):
+    """
+    Get the initial marking from a Petri net
+    (observing which nodes are without input connection,
+    if several nodes exist, then a source place is created artificially)
+
+    Parameters
+    -------------
+    net
+        Petri net
+
+    Returns
+    -------------
+    net
+        Petri net
+    initial_marking
+        Initial marking of the Petri net
+    """
+    places = set(net.places)
+
+    places_wo_input = []
+    for place in places:
+        if len(place.in_arcs) == 0:
+            places_wo_input.append(place)
+
+    itranscount = 0
+    initial_marking = Marking()
+
+    if len(places_wo_input) > 1:
+        source = PetriNet.Place('petri_source')
+        net.places.add(source)
+        for place in places_wo_input:
+            itranscount = itranscount + 1
+            htrans = PetriNet.Transition("itrans_" + str(itranscount), None)
+            net.transitions.add(htrans)
+            utils.add_arc_from_to(source, htrans, net)
+            utils.add_arc_from_to(htrans, place, net)
+        initial_marking[source] = 1
+    elif len(places_wo_input) == 1:
+        initial_marking[places_wo_input[0]] = 1
+    return net, initial_marking
 
 
 def get_final_marking(net):
@@ -116,7 +159,7 @@ def get_final_marking(net):
     ftranscount = 0
     final_marking = Marking()
     if len(places_wo_output) > 1:
-        sink = PetriNet.Place('sink')
+        sink = PetriNet.Place('petri_sink')
         net.places.add(sink)
         for place in places_wo_output:
             ftranscount = ftranscount + 1
@@ -281,7 +324,7 @@ def apply(bpmn_graph, parameters=None):
             inv_elements_correspondence[str(flow[2])].append(source_arc)
 
     net = remove_unconnected_places(net)
-    initial_marking = get_initial_marking(net)
+    initial_marking = get_initial_marking_wo_changing_net(net)
     net, final_marking = get_final_marking(net)
 
     for el in elements_correspondence:
@@ -290,5 +333,6 @@ def apply(bpmn_graph, parameters=None):
     if enable_reduction:
         net = reduce(net)
         net, initial_marking = remove_places_im_that_go_to_fm_through_hidden(net, initial_marking, final_marking)
-
+    net, initial_marking = get_initial_marking(net)
+    
     return net, initial_marking, final_marking, elements_correspondence, inv_elements_correspondence, el_corr_keys_map
