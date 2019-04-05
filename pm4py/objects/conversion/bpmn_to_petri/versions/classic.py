@@ -26,7 +26,8 @@ def remove_places_im_that_go_to_fm_through_hidden(net, im, fm):
     im
         Initial marking
     """
-    for place in im:
+    im_places = list(im.keys())
+    for place in im_places:
         target_transes = [arc.target for arc in place.out_arcs]
         target_places = [arc.target for trans in target_transes for arc in trans.out_arcs]
         if len(target_transes) == 1 and len(target_places) == 1:
@@ -37,7 +38,7 @@ def remove_places_im_that_go_to_fm_through_hidden(net, im, fm):
                 if len(target_places) == len(target_places_in_fm):
                     utils.remove_place(net, place)
                     utils.remove_transition(net, target_trans)
-                    im[place] = 0
+                    del im[place]
     return net, im
 
 
@@ -288,6 +289,6 @@ def apply(bpmn_graph, parameters=None):
 
     if enable_reduction:
         net = reduce(net)
-        net, im = remove_places_im_that_go_to_fm_through_hidden(net, initial_marking, final_marking)
+        net, initial_marking = remove_places_im_that_go_to_fm_through_hidden(net, initial_marking, final_marking)
 
     return net, initial_marking, final_marking, elements_correspondence, inv_elements_correspondence, el_corr_keys_map
