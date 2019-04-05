@@ -89,6 +89,7 @@ def get_initial_marking(net, max_no_comb=4):
                     utils.add_arc_from_to(htrans, p, net)
         initial_marking[source] = 1
     elif len(places_wo_input) == 1:
+        places_wo_input = list(places_wo_input)
         initial_marking[places_wo_input[0]] = 1
     return net, initial_marking
 
@@ -134,6 +135,7 @@ def get_final_marking(net, max_no_comb=4):
                     utils.add_arc_from_to(p, htrans, net)
         final_marking[sink] = 1
     elif len(places_wo_output) == 1:
+        places_wo_output = list(places_wo_output)
         final_marking[places_wo_output[0]] = 1
 
     return net, final_marking
@@ -221,6 +223,26 @@ def apply(bpmn_graph, parameters=None):
                     net.places.add(hplace)
                     utils.add_arc_from_to(htrans, hplace, net)
                     corresponding_out_nodes[node_id].append(hplace)
+            elif "inclusivegateway" in node_type:
+                input_place = PetriNet.Place('i_' + node_id)
+                net.places.add(input_place)
+                corresponding_in_nodes[node_id] = [input_place] * len(node[1]['incoming'])
+                corresponding_out_nodes[node_id] = []
+                added_places = []
+                for edge in node[1]['outgoing']:
+                    str(edge)
+                    hplace = PetriNet.Place(str(uuid.uuid4()))
+                    net.places.add(hplace)
+                    added_places.append(hplace)
+                    corresponding_out_nodes[node_id].append(hplace)
+                for i in range(1, len(added_places)+1):
+                    subsets = findsubsets(set(added_places), i)
+                    for subset in subsets:
+                        htrans = PetriNet.Transition(str(uuid.uuid4()), None)
+                        net.transitions.add(htrans)
+                        utils.add_arc_from_to(input_place, htrans, net)
+                        for place in subset:
+                            utils.add_arc_from_to(htrans, place, net)
             else:
                 input_place = PetriNet.Place('i_' + node_id)
                 net.places.add(input_place)
@@ -240,7 +262,7 @@ def apply(bpmn_graph, parameters=None):
                 corresponding_in_nodes[node_process] = []
             corresponding_in_nodes[node_process].append(source_place_source)
             start_event_subprocess[node_process] = source_place_source
-            if not node_id == node_name:
+            if not node_name == "start":
                 trans = PetriNet.Transition("stt_" + node_id, node_name)
                 net.transitions.add(trans)
                 source_place_target = PetriNet.Place("stp_" + node_id)
@@ -258,7 +280,7 @@ def apply(bpmn_graph, parameters=None):
                 corresponding_out_nodes[node_process] = []
             corresponding_out_nodes[node_process].append(sink_place_target)
             end_event_subprocess[node_process] = sink_place_target
-            if not node_id == node_name:
+            if not node_name == "end":
                 trans = PetriNet.Transition("ett_" + node_id, node_name)
                 net.transitions.add(trans)
                 sink_place_source = PetriNet.Place("etp_" + node_id)
