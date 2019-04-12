@@ -231,7 +231,7 @@ def train(log, parameters=None):
     """
     if parameters is None:
         parameters = {}
-    default_epochs = parameters["default_epochs"] if "default_epochs" in parameters else 50
+    default_epochs = parameters["default_epochs"] if "default_epochs" in parameters else 100
     parameters["enable_sort"] = False
     activity_key = parameters[
         constants.PARAMETER_CONSTANT_ACTIVITY_KEY] if constants.PARAMETER_CONSTANT_ACTIVITY_KEY in parameters else xes.DEFAULT_NAME_KEY
