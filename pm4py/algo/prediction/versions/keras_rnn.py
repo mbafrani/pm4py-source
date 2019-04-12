@@ -35,7 +35,8 @@ def get_trace_rep_rnn(trace, dictionary_features, max_len_trace):
         double list that contains the value for each feature for each event of the trace
     """
     X = []
-    for index, event in enumerate(trace):
+    for index in range(min(len(trace), max_len_trace)):
+        event = trace[index]
         ev_vector = [0] * len(dictionary_features)
         for attribute_name in event:
             attribute_value = event[attribute_name]
@@ -55,7 +56,8 @@ def get_trace_rep_rnn(trace, dictionary_features, max_len_trace):
         X.append(ev_vector)
     j = len(trace)
     while j < max_len_trace:
-        X.append(X[-1])
+        #print(X[-1])
+        X.append(np.zeros(len(X[-1])))
         j = j + 1
     X = np.transpose(np.asmatrix(X))
     X = X.tolist()
