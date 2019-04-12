@@ -6,7 +6,6 @@ from pm4py.objects.log.util import get_log_representation
 from pm4py.objects.log.util import sorting
 from pm4py.objects.log.util import xes
 from pm4py.objects.log.util.get_prefixes import get_log_with_log_prefixes
-from pm4py.statistics.traces.log import case_statistics
 from pm4py.util import constants
 
 
@@ -113,6 +112,7 @@ def test(model, obj, parameters=None):
     data, feature_names = get_log_representation.get_representation(log, str_tr_attr, str_ev_attr, num_tr_attr,
                                                                     num_ev_attr, str_evsucc_attr=str_evsucc_attr,
                                                                     feature_names=feature_names)
+
     pred = regr.predict(data)
 
     if len(pred) == 1:

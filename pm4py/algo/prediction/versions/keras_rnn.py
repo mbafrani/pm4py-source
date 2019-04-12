@@ -246,6 +246,7 @@ def train(log, parameters=None):
     if activity_key not in str_ev_attr:
         str_ev_attr.append(activity_key)
     str_evsucc_attr = [activity_key]
+
     data, feature_names = get_log_representation.get_representation(log, str_tr_attr, str_ev_attr, num_tr_attr,
                                                                     num_ev_attr, str_evsucc_attr=str_evsucc_attr)
     X = get_X_from_log(log, feature_names, max_len_trace)
