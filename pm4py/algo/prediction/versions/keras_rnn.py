@@ -287,9 +287,9 @@ def test(model, obj, parameters=None):
     else:
         log = EventLog([obj])
     max_len_trace_test_log = max([len(trace) for trace in log])
-    if max_len_trace_test_log > max_len_trace:
+    """if max_len_trace_test_log > max_len_trace:
         raise Exception(
-            "cannot predict when the maximum length of the test log is greater than the maximum length of the training log")
+            "cannot predict when the maximum length of the test log is greater than the maximum length of the training log")"""
     X = get_X_from_log(log, feature_names, max_len_trace)
     y = regr.predict(X)
     if len(log) == 1:
