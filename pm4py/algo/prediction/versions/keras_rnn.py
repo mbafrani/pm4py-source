@@ -231,7 +231,7 @@ def train(log, parameters=None):
     """
     if parameters is None:
         parameters = {}
-    default_epochs = parameters["default_epochs"] if "default_epochs" in parameters else 100
+    default_epochs = parameters["default_epochs"] if "default_epochs" in parameters else 50
     parameters["enable_sort"] = False
     activity_key = parameters[
         constants.PARAMETER_CONSTANT_ACTIVITY_KEY] if constants.PARAMETER_CONSTANT_ACTIVITY_KEY in parameters else xes.DEFAULT_NAME_KEY
@@ -251,7 +251,7 @@ def train(log, parameters=None):
                                                                     num_ev_attr, str_evsucc_attr=str_evsucc_attr)
     X = get_X_from_log(log, feature_names, max_len_trace)
     in_out_neurons = X.shape[2]
-    hidden_neurons = int(in_out_neurons * 7.5)
+    hidden_neurons = min(int(in_out_neurons * 7.5), 50)
     input_shape = (X.shape[1], X.shape[2])
     model = Sequential()
     model.add(LSTM(hidden_neurons, return_sequences=False, input_shape=input_shape))
