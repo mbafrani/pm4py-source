@@ -66,14 +66,10 @@ def train(log, parameters=None):
     ext_log, change_indexes = get_log_with_log_prefixes(log)
     data, feature_names = get_log_representation.get_representation(ext_log, str_tr_attr, str_ev_attr, num_tr_attr,
                                                                     num_ev_attr, str_evsucc_attr=str_evsucc_attr)
-    case_durations = case_statistics.get_all_casedurations(ext_log, parameters=parameters)
 
-    change_indexes_flattened = [y for x in change_indexes for y in x]
-    # remaining_time = [-case_durations[i] + case_durations[change_indexes_flattened[i]] for i in
-    #                  range(len(case_durations))]
     remaining_time = [y for x in y_orig for y in x]
 
-    regr = ElasticNet()
+    regr = ElasticNet(max_iter=10000, l1_ratio=0.7)
     regr.fit(data, remaining_time)
 
     return {"str_tr_attr": str_tr_attr, "str_ev_attr": str_ev_attr, "num_tr_attr": num_tr_attr,
