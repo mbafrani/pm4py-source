@@ -9,10 +9,7 @@ from keras.models import Sequential
 from pm4py.algo.filtering.log.attributes import attributes_filter
 from pm4py.objects.log.log import EventLog
 from pm4py.objects.log.util import get_log_representation
-from pm4py.objects.log.util import sorting
 from pm4py.objects.log.util import xes
-from pm4py.objects.log.util.get_prefixes import get_log_with_log_prefixes
-from pm4py.statistics.traces.log import case_statistics
 from pm4py.util import constants
 
 
@@ -56,7 +53,7 @@ def get_trace_rep_rnn(trace, dictionary_features, max_len_trace):
         X.append(ev_vector)
     j = len(trace)
     while j < max_len_trace:
-        #print(X[-1])
+        # print(X[-1])
         X.append(np.zeros(len(X[-1])))
         j = j + 1
     X = np.transpose(np.asmatrix(X))
@@ -204,6 +201,23 @@ def reconstruct_value(y, log_max_value):
     return math.exp((y + 1.0) / 2.0 * log_max_value) - 1
 
 
+def get_remaining_time_from_log(log, max_len_trace=100000, parameters=None):
+    if parameters is None:
+        parameters = {}
+    timestamp_key = parameters[
+        constants.PARAMETER_CONSTANT_TIMESTAMP_KEY] if constants.PARAMETER_CONSTANT_TIMESTAMP_KEY in parameters else xes.DEFAULT_TIMESTAMP_KEY
+    y_orig = []
+    for trace in log:
+        y_orig.append([])
+        for index, event in enumerate(trace):
+            if index >= max_len_trace:
+                break
+            y_orig[-1].append((trace[-1][timestamp_key] - trace[index][timestamp_key]).total_seconds())
+        while len(y_orig[-1]) < max_len_trace:
+            y_orig[-1].append(y_orig[-1][-1])
+    return y_orig
+
+
 def train(log, parameters=None):
     """
     Train the model
@@ -217,23 +231,15 @@ def train(log, parameters=None):
     """
     if parameters is None:
         parameters = {}
-    default_epochs = parameters["default_epochs"] if "default_epochs" in parameters else 15
+    default_epochs = parameters["default_epochs"] if "default_epochs" in parameters else 50
     parameters["enable_sort"] = False
     activity_key = parameters[
         constants.PARAMETER_CONSTANT_ACTIVITY_KEY] if constants.PARAMETER_CONSTANT_ACTIVITY_KEY in parameters else xes.DEFAULT_NAME_KEY
-    timestamp_key = parameters[
-        constants.PARAMETER_CONSTANT_TIMESTAMP_KEY] if constants.PARAMETER_CONSTANT_TIMESTAMP_KEY in parameters else xes.DEFAULT_TIMESTAMP_KEY
-    log = sorting.sort_timestamp(log, timestamp_key)
+    # log = sorting.sort_timestamp(log, timestamp_key)
     max_len_trace = max([len(trace) for trace in log])
-    y_orig = []
-    for trace in log:
-        y_orig.append([])
-        for index, event in enumerate(trace):
-            if index >= max_len_trace:
-                break
-            y_orig[-1].append((trace[-1][timestamp_key] - trace[index][timestamp_key]).total_seconds())
-        while len(y_orig[-1]) < max_len_trace:
-            y_orig[-1].append(y_orig[-1][-1])
+    y_orig = parameters["y_orig"] if "y_orig" in parameters else get_remaining_time_from_log(log,
+                                                                                             max_len_trace=max_len_trace,
+                                                                                             parameters=parameters)
     y, log_max_value = normalize_remaining_time(y_orig)
     y = np.array(y)
     str_tr_attr, str_ev_attr, num_tr_attr, num_ev_attr = attributes_filter.select_attributes_from_log_for_tree(log)
@@ -286,10 +292,6 @@ def test(model, obj, parameters=None):
         log = obj
     else:
         log = EventLog([obj])
-    max_len_trace_test_log = max([len(trace) for trace in log])
-    """if max_len_trace_test_log > max_len_trace:
-        raise Exception(
-            "cannot predict when the maximum length of the test log is greater than the maximum length of the training log")"""
     X = get_X_from_log(log, feature_names, max_len_trace)
     y = regr.predict(X)
     if len(log) == 1:
@@ -297,5 +299,5 @@ def test(model, obj, parameters=None):
     else:
         ret = []
         for index, trace in enumerate(log):
-            ret.append(reconstruct_value(y[index][len(trace)-1], log_max_value))
+            ret.append(reconstruct_value(y[index][len(trace) - 1], log_max_value))
         return ret
