@@ -223,12 +223,15 @@ def train(log, parameters=None):
         constants.PARAMETER_CONSTANT_TIMESTAMP_KEY] if constants.PARAMETER_CONSTANT_TIMESTAMP_KEY in parameters else xes.DEFAULT_TIMESTAMP_KEY
     log = sorting.sort_timestamp(log, timestamp_key)
     max_len_trace = max([len(trace) for trace in log])
-    ext_log, change_indexes = get_log_with_log_prefixes(log)
-    case_durations = case_statistics.get_all_casedurations(ext_log, parameters=parameters)
-    change_indexes_flattened = [y for x in change_indexes for y in x]
-    remaining_time = [-case_durations[i] + case_durations[change_indexes_flattened[i]] for i in
-                      range(len(case_durations))]
-    y_orig = group_remaining_time(change_indexes, remaining_time, max_len_trace)
+    y_orig = []
+    for trace in log:
+        y_orig.append([])
+        for index, event in enumerate(trace):
+            if index >= max_len_trace:
+                break
+            y_orig[-1].append((trace[-1][timestamp_key] - trace[index][timestamp_key]).total_seconds())
+        while len(y_orig[-1]) < max_len_trace:
+            y_orig[-1].append(y_orig[-1][-1])
     y, log_max_value = normalize_remaining_time(y_orig)
     y = np.array(y)
     str_tr_attr, str_ev_attr, num_tr_attr, num_ev_attr = attributes_filter.select_attributes_from_log_for_tree(log)
@@ -249,7 +252,7 @@ def train(log, parameters=None):
     model.fit(X, y, batch_size=X.shape[1], nb_epoch=default_epochs, validation_split=0.2)
     return {"str_tr_attr": str_tr_attr, "str_ev_attr": str_ev_attr, "num_tr_attr": num_tr_attr,
             "num_ev_attr": num_ev_attr, "str_evsucc_attr": str_evsucc_attr, "feature_names": feature_names,
-            "remaining_time": remaining_time, "regr": model, "max_len_trace": max_len_trace,
+            "regr": model, "max_len_trace": max_len_trace,
             "log_max_value": log_max_value, "variant": "keras_rnn"}
 
 
