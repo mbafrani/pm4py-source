@@ -10,6 +10,23 @@ from pm4py.statistics.traces.log import case_statistics
 from pm4py.util import constants
 
 
+def get_remaining_time_from_log(log, max_len_trace=100000, parameters=None):
+    if parameters is None:
+        parameters = {}
+    timestamp_key = parameters[
+        constants.PARAMETER_CONSTANT_TIMESTAMP_KEY] if constants.PARAMETER_CONSTANT_TIMESTAMP_KEY in parameters else xes.DEFAULT_TIMESTAMP_KEY
+    y_orig = []
+    for trace in log:
+        y_orig.append([])
+        for index, event in enumerate(trace):
+            if index >= max_len_trace:
+                break
+            y_orig[-1].append((trace[-1][timestamp_key] - trace[index][timestamp_key]).total_seconds())
+        while len(y_orig[-1]) < max_len_trace:
+            y_orig[-1].append(y_orig[-1][-1])
+    return y_orig
+
+
 def train(log, parameters=None):
     """
     Train the prediction model
@@ -34,6 +51,10 @@ def train(log, parameters=None):
         constants.PARAMETER_CONSTANT_ACTIVITY_KEY] if constants.PARAMETER_CONSTANT_ACTIVITY_KEY in parameters else xes.DEFAULT_NAME_KEY
     timestamp_key = parameters[
         constants.PARAMETER_CONSTANT_TIMESTAMP_KEY] if constants.PARAMETER_CONSTANT_TIMESTAMP_KEY in parameters else xes.DEFAULT_TIMESTAMP_KEY
+    max_len_trace = max([len(trace) for trace in log])
+    y_orig = parameters["y_orig"] if "y_orig" in parameters else get_remaining_time_from_log(log,
+                                                                                             max_len_trace=max_len_trace,
+                                                                                             parameters=parameters)
 
     log = sorting.sort_timestamp(log, timestamp_key)
 
@@ -48,8 +69,9 @@ def train(log, parameters=None):
     case_durations = case_statistics.get_all_casedurations(ext_log, parameters=parameters)
 
     change_indexes_flattened = [y for x in change_indexes for y in x]
-    remaining_time = [-case_durations[i] + case_durations[change_indexes_flattened[i]] for i in
-                      range(len(case_durations))]
+    # remaining_time = [-case_durations[i] + case_durations[change_indexes_flattened[i]] for i in
+    #                  range(len(case_durations))]
+    remaining_time = [y for x in y_orig for y in x]
 
     regr = ElasticNet()
     regr.fit(data, remaining_time)
