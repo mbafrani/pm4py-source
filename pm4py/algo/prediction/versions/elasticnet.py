@@ -10,6 +10,23 @@ from pm4py.util import constants
 
 
 def get_remaining_time_from_log(log, max_len_trace=100000, parameters=None):
+    """
+    Gets the remaining time for the instances given a log and a trace index
+
+    Parameters
+    ------------
+    log
+        Log
+    max_len_trace
+        Index
+    parameters
+        Parameters of the algorithm
+
+    Returns
+    ------------
+    list
+        List of remaining times
+    """
     if parameters is None:
         parameters = {}
     timestamp_key = parameters[
@@ -57,10 +74,16 @@ def train(log, parameters=None):
 
     log = sorting.sort_timestamp(log, timestamp_key)
 
-    str_tr_attr, str_ev_attr, num_tr_attr, num_ev_attr = attributes_filter.select_attributes_from_log_for_tree(log)
-    if activity_key not in str_ev_attr:
-        str_ev_attr.append(activity_key)
     str_evsucc_attr = [activity_key]
+    if "str_ev_attr" in parameters:
+        str_tr_attr = parameters["str_tr_attr"] if "str_tr_attr" in parameters else []
+        str_ev_attr = parameters["str_ev_attr"] if "str_ev_attr" in parameters else []
+        num_tr_attr = parameters["num_tr_attr"] if "num_tr_attr" in parameters else []
+        num_ev_attr = parameters["num_ev_attr"] if "num_ev_attr" in parameters else []
+    else:
+        str_tr_attr, str_ev_attr, num_tr_attr, num_ev_attr = attributes_filter.select_attributes_from_log_for_tree(log)
+        if activity_key not in str_ev_attr:
+            str_ev_attr.append(activity_key)
 
     ext_log, change_indexes = get_log_with_log_prefixes(log)
     data, feature_names = get_log_representation.get_representation(ext_log, str_tr_attr, str_ev_attr, num_tr_attr,
