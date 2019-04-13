@@ -67,10 +67,7 @@ def train(log, parameters=None):
         constants.PARAMETER_CONSTANT_ACTIVITY_KEY] if constants.PARAMETER_CONSTANT_ACTIVITY_KEY in parameters else xes.DEFAULT_NAME_KEY
     timestamp_key = parameters[
         constants.PARAMETER_CONSTANT_TIMESTAMP_KEY] if constants.PARAMETER_CONSTANT_TIMESTAMP_KEY in parameters else xes.DEFAULT_TIMESTAMP_KEY
-    max_len_trace = max([len(trace) for trace in log])
-    y_orig = parameters["y_orig"] if "y_orig" in parameters else get_remaining_time_from_log(log,
-                                                                                             max_len_trace=max_len_trace,
-                                                                                             parameters=parameters)
+    y_orig = parameters["y_orig"] if "y_orig" in parameters else None
 
     log = sorting.sort_timestamp(log, timestamp_key)
 
@@ -89,8 +86,11 @@ def train(log, parameters=None):
     data, feature_names = get_log_representation.get_representation(ext_log, str_tr_attr, str_ev_attr, num_tr_attr,
                                                                     num_ev_attr, str_evsucc_attr=str_evsucc_attr)
 
-    remaining_time = [y for x in y_orig for y in x]
-
+    if y_orig is not None:
+        remaining_time = [y for x in y_orig for y in x]
+    else:
+        remaining_time = [(trace[-1][timestamp_key] - trace[0][timestamp_key]).total_seconds() for trace in ext_log if
+                          trace]
     regr = ElasticNet(max_iter=10000, l1_ratio=0.7)
     regr.fit(data, remaining_time)
 
