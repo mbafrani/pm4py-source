@@ -230,7 +230,7 @@ def get_first_quartile_caseduration(log, parameters=None):
     """
     if parameters is None:
         parameters = {}
-    
+
     parameters["sorted"] = True
 
     duration_values = get_all_casedurations(log, parameters=parameters)
