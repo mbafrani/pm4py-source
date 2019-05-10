@@ -77,6 +77,10 @@ def train(log, parameters=None):
         constants.PARAMETER_CONSTANT_ACTIVITY_KEY] if constants.PARAMETER_CONSTANT_ACTIVITY_KEY in parameters else xes.DEFAULT_NAME_KEY
     timestamp_key = parameters[
         constants.PARAMETER_CONSTANT_TIMESTAMP_KEY] if constants.PARAMETER_CONSTANT_TIMESTAMP_KEY in parameters else xes.DEFAULT_TIMESTAMP_KEY
+    business_hours = parameters["business_hours"] if "business_hours" in parameters else False
+    worktiming = parameters["worktiming"] if "worktiming" in parameters else [7, 17]
+    weekends = parameters["weekends"] if "weekends" in parameters else [6, 7]
+
     y_orig = parameters["y_orig"] if "y_orig" in parameters else None
 
     log = sorting.sort_timestamp(log, timestamp_key)
@@ -99,8 +103,19 @@ def train(log, parameters=None):
     if y_orig is not None:
         remaining_time = [y for x in y_orig for y in x]
     else:
-        remaining_time = [(trace[-1][timestamp_key] - trace[0][timestamp_key]).total_seconds() for trace in ext_log if
-                          trace]
+        if business_hours:
+            remaining_time = []
+            for trace in ext_log:
+                if trace:
+                    timestamp_et = trace[-1][timestamp_key]
+                    timestamp_st = trace[0][timestamp_key]
+
+                    bh = BusinessHours(timestamp_st.replace(tzinfo=None), timestamp_et.replace(tzinfo=None),
+                                       worktiming=worktiming, weekends=weekends)
+                    remaining_time.append(bh.getseconds())
+        else:
+            remaining_time = [(trace[-1][timestamp_key] - trace[0][timestamp_key]).total_seconds() for trace in ext_log if
+                              trace]
     regr = ElasticNet(max_iter=10000, l1_ratio=0.7)
     regr.fit(data, remaining_time)
 
