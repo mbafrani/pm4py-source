@@ -86,7 +86,7 @@ def get_rules_per_edge_given_bpmn_and_gw_map(log, bpmn_graph, gateway_map, param
                     if gw in gateway_map:
                         del gateway_map[gw]
         except:
-            traceback.print_exc()
+            #traceback.print_exc()
             del gateway_map[gw]
 
     return get_rules_per_edge(log, gateway_map, parameters=parameters)
@@ -115,23 +115,25 @@ def get_rules_per_edge(log, gateway_map, parameters=None):
 
     rules_per_edge = {}
     for gw in gateway_map:
-        rules = None
-        rules = {}
-        source_activity = gateway_map[gw]["source"]
-        if gateway_map[gw]["type"] == "onlytasks":
-            target_activities = [x for x in gateway_map[gw]["edges"]]
-            print("AAA", target_activities)
-            rules = get_decision_mining_rules_given_activities(log, target_activities, parameters=parameters)
-        else:
-            main_target_activity = list(gateway_map[gw]["edges"].keys())[0]
-            other_activities = get_other_activities_connected_to_source(log, source_activity, main_target_activity)
-            if other_activities:
-                target_activities = [main_target_activity] + other_activities
-                print("BBB", target_activities)
+        try:
+            rules = None
+            rules = {}
+            source_activity = gateway_map[gw]["source"]
+            if gateway_map[gw]["type"] == "onlytasks":
+                target_activities = [x for x in gateway_map[gw]["edges"]]
                 rules = get_decision_mining_rules_given_activities(log, target_activities, parameters=parameters)
-        for n in gateway_map[gw]["edges"]:
-            if n in rules:
-                rules_per_edge[gateway_map[gw]["edges"][n]["edge"]] = rules[n]
+            else:
+                main_target_activity = list(gateway_map[gw]["edges"].keys())[0]
+                other_activities = get_other_activities_connected_to_source(log, source_activity, main_target_activity)
+                if other_activities:
+                    target_activities = [main_target_activity] + other_activities
+                    rules = get_decision_mining_rules_given_activities(log, target_activities, parameters=parameters)
+            for n in gateway_map[gw]["edges"]:
+                if n in rules:
+                    rules_per_edge[gateway_map[gw]["edges"][n]["edge"]] = rules[n]
+        except:
+            #traceback.print_exc()
+            pass
     return rules_per_edge
 
 
@@ -328,14 +330,13 @@ def form_new_curr_rec_rule(curr_rec_rule, positive, feature_name, threshold):
         Updated rules
     """
     new_rules = deepcopy(curr_rec_rule)
-
     if positive:
-        if threshold == 0.5:
+        if threshold == 0.5 and "@" in feature_name:
             new_rules.append(feature_name.replace("@", " == "))
         else:
             new_rules.append(feature_name + " <= " + str(threshold))
     else:
-        if threshold == 0.5:
+        if threshold == 0.5 and "@" in feature_name:
             new_rules.append(feature_name.replace("@", " != "))
         else:
             new_rules.append(feature_name + " > " + str(threshold))
