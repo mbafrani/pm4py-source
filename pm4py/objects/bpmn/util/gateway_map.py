@@ -1,4 +1,4 @@
-def get_gateway_map(bpmn_graph):
+def get_gateway_map(bpmn_graph, consider_all_elements_to_be_task=False):
     """
     Gets the gateway map out of a BPMN diagram
 
@@ -6,6 +6,8 @@ def get_gateway_map(bpmn_graph):
     ------------
     bpmn_graph
         BPMN graph
+    consider_all_elements_to_be_task
+        Boolean value that sets all the elements to be tasks
 
     Returns
     -----------
@@ -29,7 +31,7 @@ def get_gateway_map(bpmn_graph):
     for n in dg.nodes:
         node = dg.nodes[n]
         node_type = node["type"]
-        if node_type == "exclusiveGateway":
+        if node_type == "exclusiveGateway" or node_type == "eventBasedGateway":
             node_incoming = []
             node_outgoing = []
             for x in node["incoming"]:
@@ -38,12 +40,16 @@ def get_gateway_map(bpmn_graph):
             for x in node["outgoing"]:
                 if x in edges_map and edges_map[x]["targetRef"] in dg.nodes:
                     node_outgoing.append(dg.nodes[edges_map[x]["targetRef"]])
-            incoming_tasks = [x for x in node_incoming if "task" in x["type"].lower()]
-            task_nodes = [x for x in node_outgoing if "task" in x["type"].lower()]
+            if consider_all_elements_to_be_task:
+                incoming_tasks = [x for x in node_incoming]
+                task_nodes = [x for x in node_outgoing]
+            else:
+                incoming_tasks = [x for x in node_incoming if "task" in x["type"].lower()]
+                task_nodes = [x for x in node_outgoing if "task" in x["type"].lower()]
             if len(incoming_tasks) == 1 and len(node_outgoing) > 1:
                 gateway_nodes = [x for x in node_outgoing if "gateway" in x["type"].lower()]
                 other_nodes = [x for x in node_outgoing if x not in task_nodes and x not in gateway_nodes]
-                if len(other_nodes) == 0 and task_nodes:
+                if consider_all_elements_to_be_task or (len(other_nodes) == 0 and task_nodes):
                     if gateway_nodes and len(task_nodes) == 1:
                         gateway_map[n] = {"type": "gateway", "source": incoming_tasks[0]["node_name"], "edges": {}}
                         for task in task_nodes:
