@@ -1,1 +1,1 @@
-from pm4py.algo.other.anchors import factory, versions
+from pm4py.algo.other.anchors import factory, versions, applications
