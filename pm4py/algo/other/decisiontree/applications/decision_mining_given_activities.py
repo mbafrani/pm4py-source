@@ -334,10 +334,10 @@ def form_new_curr_rec_rule(curr_rec_rule, positive, feature_name, threshold):
         if threshold == 0.5 and "@" in feature_name:
             new_rules.append(feature_name.replace("@", " == "))
         else:
-            new_rules.append(feature_name + " <= " + str(threshold))
+            new_rules.append(feature_name + " > " + str(threshold))
     else:
         if threshold == 0.5 and "@" in feature_name:
             new_rules.append(feature_name.replace("@", " != "))
         else:
-            new_rules.append(feature_name + " > " + str(threshold))
+            new_rules.append(feature_name + " <= " + str(threshold))
     return new_rules
