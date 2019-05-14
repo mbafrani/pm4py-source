@@ -20,7 +20,8 @@ setup(
     py_modules=[pm4py.__name__],
     include_package_data=True,
     packages=['pm4py', 'pm4py.algo', 'pm4py.algo.other', 'pm4py.algo.other.anchors',
-              'pm4py.algo.other.anchors.versions', 'pm4py.algo.other.anchors.interface', 'pm4py.algo.other.clustering',
+              'pm4py.algo.other.anchors.versions', 'pm4py.algo.other.anchors.interface',
+              'pm4py.algo.other.anchors.applications', 'pm4py.algo.other.clustering',
               'pm4py.algo.other.clustering.versions', 'pm4py.algo.other.conceptdrift',
               'pm4py.algo.other.conceptdrift.utils', 'pm4py.algo.other.conceptdrift.versions',
               'pm4py.algo.other.decisiontree', 'pm4py.algo.other.decisiontree.applications',
@@ -130,3 +131,4 @@ setup(
         'Tracker': 'https://github.com/pm4py/pm4py-source/issues',
     }
 )
+
