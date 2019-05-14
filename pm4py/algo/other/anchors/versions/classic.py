@@ -3,10 +3,30 @@ from sklearn.linear_model import PassiveAggressiveClassifier
 from anchor import anchor_tabular
 from pm4py.objects.log.util import get_log_representation
 from pm4py.objects.log.log import EventLog
+import sklearn.ensemble
 
 
 class ClassicAnchorClassification(AnchorClassification):
     def __init__(self, log, target, classes, parameters=None):
+        """
+        Initialize the Anchors classification
+
+        Parameters
+        ------------
+        log
+            Log
+        target
+            Numerical target of the classification
+        classes
+            Classes (of the classification)
+        parameters
+            Parameters of the algorithm
+
+        Returns
+        ------------
+        anchors
+            Anchors classifier
+        """
         if parameters is None:
             parameters = {}
 
@@ -21,13 +41,29 @@ class ClassicAnchorClassification(AnchorClassification):
         AnchorClassification.__init__(self, self.log, target, classes, parameters=None)
 
     def train(self):
-        self.classifier = PassiveAggressiveClassifier()
+        """
+        Train the anchors classifier (underlying is random forest classifier)
+        """
+        self.classifier = sklearn.ensemble.RandomForestClassifier(n_estimators=50)
         self.explainer = anchor_tabular.AnchorTabularExplainer(self.classes, self.feature_names, self.data,
                                                                categorical_names={})
         self.explainer.fit(self.data, self.feature_names, self.data, self.feature_names)
         self.classifier.fit(self.explainer.encoder.transform(self.data), self.target)
 
     def predict(self, trace):
+        """
+        Predict using the underlying classifier
+
+        Parameters
+        -------------
+        trace
+            Trace
+
+        Returns
+        --------------
+        prediction
+            Predicted target class
+        """
         log = EventLog()
         log.append(trace)
         data, feature_names = get_log_representation.get_representation(log, self.str_tr_attr, self.str_ev_attr,
@@ -35,16 +71,24 @@ class ClassicAnchorClassification(AnchorClassification):
                                                                         feature_names=self.feature_names)
 
         prediction = self.classifier.predict(data)[0]
-        return prediction
+        return self.classes[prediction]
 
-    def explain(self, trace, threshold=-0.01):
+    def explain(self, trace, threshold=0.95):
+        """
+        Provides explanation of the given decision
+
+        Parameters
+        -------------
+        trace
+            Trace
+        threshold
+            Threshold of the decision explanation
+        """
         log = EventLog()
         log.append(trace)
         data, feature_names = get_log_representation.get_representation(log, self.str_tr_attr, self.str_ev_attr,
                                                                         self.num_tr_attr, self.num_ev_attr,
                                                                         feature_names=self.feature_names)
-
-        print(data[0])
 
         exp = self.explainer.explain_instance(data[0], self.classifier.predict, threshold=0.95)
 
