@@ -8,7 +8,7 @@ from copy import deepcopy
 from pm4py.algo.other.anchors import factory as anchors_factory
 
 
-def get_anchors_from_log_and_gwmap(log, bpmn_graph, parameters=None):
+def get_anchors_from_log_and_bpmn_graph(log, bpmn_graph, parameters=None):
     """
     Get the anchors for gateways from a log and a BPMN graph
 
@@ -78,7 +78,7 @@ def get_anchors_from_log_and_gwmap(log, gateway_map, parameters=None):
                     anchors = get_anchors_given_activities(log, target_activities, parameters=parameters)
                     ret_map[gw] = anchors
         except:
-            traceback.print_exc()
+            #traceback.print_exc()
             pass
 
     return ret_map
