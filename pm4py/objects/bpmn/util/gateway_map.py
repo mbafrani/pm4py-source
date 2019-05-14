@@ -1,4 +1,4 @@
-def get_gateway_map(bpmn_graph, consider_all_elements_to_be_task=False):
+def get_gateway_map(bpmn_graph, consider_all_elements_to_be_task=False, use_node_id=False):
     """
     Gets the gateway map out of a BPMN diagram
 
@@ -8,6 +8,8 @@ def get_gateway_map(bpmn_graph, consider_all_elements_to_be_task=False):
         BPMN graph
     consider_all_elements_to_be_task
         Boolean value that sets all the elements to be tasks
+    use_node_id
+        Use the node ID for storing elements in the gateway map
 
     Returns
     -----------
@@ -23,6 +25,8 @@ def get_gateway_map(bpmn_graph, consider_all_elements_to_be_task=False):
     """
     gateway_map = {}
     edges_map = {}
+
+    wanted_ret_el = "id" if use_node_id else "node_name"
 
     dg = bpmn_graph.diagram_graph
     for e in dg.edges:
@@ -51,12 +55,12 @@ def get_gateway_map(bpmn_graph, consider_all_elements_to_be_task=False):
                 other_nodes = [x for x in node_outgoing if x not in task_nodes and x not in gateway_nodes]
                 if consider_all_elements_to_be_task or (len(other_nodes) == 0 and task_nodes):
                     if gateway_nodes and len(task_nodes) == 1:
-                        gateway_map[n] = {"type": "gateway", "source": incoming_tasks[0]["node_name"], "edges": {}}
+                        gateway_map[n] = {"type": "gateway", "source": incoming_tasks[0][wanted_ret_el], "edges": {}}
                         for task in task_nodes:
-                            gateway_map[n]["edges"][task["node_name"]] = {"edge": task["incoming"][0], "rules": []}
+                            gateway_map[n]["edges"][task[wanted_ret_el]] = {"edge": task["incoming"][0], "rules": []}
                     elif len(task_nodes) > 1:
-                        gateway_map[n] = {"type": "onlytasks", "source": incoming_tasks[0]["node_name"], "edges": {}}
+                        gateway_map[n] = {"type": "onlytasks", "source": incoming_tasks[0][wanted_ret_el], "edges": {}}
                         for task in task_nodes:
-                            gateway_map[n]["edges"][task["node_name"]] = {"edge": task["incoming"][0], "rules": []}
+                            gateway_map[n]["edges"][task[wanted_ret_el]] = {"edge": task["incoming"][0], "rules": []}
 
     return gateway_map, edges_map

@@ -32,7 +32,20 @@ def get_rules_per_edge_given_bpmn(log, bpmn_graph, parameters=None):
     rules_per_edge
         Dictionary that associates to each edge a rule
     """
-    gateway_map, edges_map = gwmap_builder.get_gateway_map(bpmn_graph)
+    if parameters is None:
+        parameters = {}
+
+    consider_all_elements_to_be_task = parameters[
+        "consider_all_elements_to_be_task"] if "consider_all_elements_to_be_task" in parameters else False
+    avoid_matching = parameters["avoid_matching"] if "avoid_matching" in parameters else True
+    use_node_id = parameters["use_node_id"] if "use_node_id" in parameters else False
+
+    gateway_map, edges_map = gwmap_builder.get_gateway_map(bpmn_graph,
+                                                           consider_all_elements_to_be_task=consider_all_elements_to_be_task,
+                                                           use_node_id=use_node_id)
+
+    if avoid_matching:
+        return get_rules_per_edge(log, gateway_map, parameters=parameters)
 
     return get_rules_per_edge_given_bpmn_and_gw_map(log, bpmn_graph, gateway_map, parameters=parameters)
 
@@ -63,11 +76,15 @@ def get_rules_per_edge_given_bpmn_and_gw_map(log, bpmn_graph, gateway_map, param
         try:
             gateway_map[gw]["source"] = model_to_log[gateway_map[gw]["source"]]
             for n in gateway_map[gw]["edges"]:
-                gmgwk = gateway_map[gw]["edges"].keys()
-                for key in gmgwk:
-                    if not key == model_to_log[key]:
-                        gateway_map[gw]["edges"][n][model_to_log[key]] = gateway_map[gw]["edges"][n][key]
-                        del gateway_map[gw]["edges"][n][key]
+                try:
+                    gmgwk = gateway_map[gw]["edges"].keys()
+                    for key in gmgwk:
+                        if not key == model_to_log[key]:
+                            gateway_map[gw]["edges"][n][model_to_log[key]] = gateway_map[gw]["edges"][n][key]
+                            del gateway_map[gw]["edges"][n][key]
+                except:
+                    if gw in gateway_map:
+                        del gateway_map[gw]
         except:
             traceback.print_exc()
             del gateway_map[gw]
@@ -93,6 +110,9 @@ def get_rules_per_edge(log, gateway_map, parameters=None):
     rules_per_edge
         Dictionary that associates to each edge a rule
     """
+    if parameters is None:
+        parameters = {}
+
     rules_per_edge = {}
     for gw in gateway_map:
         rules = None
@@ -100,12 +120,14 @@ def get_rules_per_edge(log, gateway_map, parameters=None):
         source_activity = gateway_map[gw]["source"]
         if gateway_map[gw]["type"] == "onlytasks":
             target_activities = [x for x in gateway_map[gw]["edges"]]
+            print("AAA", target_activities)
             rules = get_decision_mining_rules_given_activities(log, target_activities, parameters=parameters)
         else:
             main_target_activity = list(gateway_map[gw]["edges"].keys())[0]
             other_activities = get_other_activities_connected_to_source(log, source_activity, main_target_activity)
             if other_activities:
                 target_activities = [main_target_activity] + other_activities
+                print("BBB", target_activities)
                 rules = get_decision_mining_rules_given_activities(log, target_activities, parameters=parameters)
         for n in gateway_map[gw]["edges"]:
             if n in rules:
