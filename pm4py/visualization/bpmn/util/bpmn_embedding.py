@@ -63,6 +63,6 @@ def embed_rules_into_bpmn(bpmn_graph, rules_per_edge):
         flow = bpmn_graph.get_flow_by_id(edge)
         if bpmn_python_consts.Consts.decorations not in flow[2]:
             flow[2][bpmn_python_consts.Consts.decorations] = []
-        logging.info("writing rule = " + str(rules_per_edge[edge]) + " into edge = " + str(flo))
+        logging.info("writing rule = " + str(rules_per_edge[edge]) + " into edge = " + str(flow))
         flow[2][bpmn_python_consts.Consts.decorations].append(["decisionRule", rules_per_edge[edge]])
     return bpmn_graph
