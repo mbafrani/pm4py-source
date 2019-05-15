@@ -57,12 +57,14 @@ def get_gateway_map(bpmn_graph, consider_all_elements_to_be_task=False, use_node
                 other_nodes = [x for x in node_outgoing if x not in task_nodes and x not in gateway_nodes]
                 if consider_all_elements_to_be_task or (len(other_nodes) == 0 and task_nodes):
                     if gateway_nodes and len(task_nodes) == 1:
-                        gateway_map[n] = {"type": "gateway", "source": incoming_tasks[0][wanted_ret_el], "edges": {}}
-                        for task in task_nodes:
-                            gateway_map[n]["edges"][task[wanted_ret_el]] = {"edge": task["incoming"][0], "rules": []}
+                        if len(incoming_tasks) > 0 and wanted_ret_el in incoming_tasks[0]:
+                            gateway_map[n] = {"type": "gateway", "source": incoming_tasks[0][wanted_ret_el], "edges": {}}
+                            for task in task_nodes:
+                                gateway_map[n]["edges"][task[wanted_ret_el]] = {"edge": task["incoming"][0], "rules": []}
                     elif len(task_nodes) > 1:
-                        gateway_map[n] = {"type": "onlytasks", "source": incoming_tasks[0][wanted_ret_el], "edges": {}}
-                        for task in task_nodes:
-                            gateway_map[n]["edges"][task[wanted_ret_el]] = {"edge": task["incoming"][0], "rules": []}
+                        if len(incoming_tasks) > 0 and wanted_ret_el in incoming_tasks[0]:
+                            gateway_map[n] = {"type": "onlytasks", "source": incoming_tasks[0][wanted_ret_el], "edges": {}}
+                            for task in task_nodes:
+                                gateway_map[n]["edges"][task[wanted_ret_el]] = {"edge": task["incoming"][0], "rules": []}
 
     return gateway_map, edges_map
