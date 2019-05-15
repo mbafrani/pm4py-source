@@ -1,4 +1,4 @@
-def get_gateway_map(bpmn_graph, consider_all_elements_to_be_task=False, use_node_id=False):
+def get_gateway_map(bpmn_graph, consider_all_elements_to_be_task=False, use_node_id=False, relax_condition_one_entry=True):
     """
     Gets the gateway map out of a BPMN diagram
 
@@ -10,6 +10,8 @@ def get_gateway_map(bpmn_graph, consider_all_elements_to_be_task=False, use_node
         Boolean value that sets all the elements to be tasks
     use_node_id
         Use the node ID for storing elements in the gateway map
+    relax_condition_one_entry
+        Relax condition on the single entry of the gateway
 
     Returns
     -----------
@@ -50,7 +52,7 @@ def get_gateway_map(bpmn_graph, consider_all_elements_to_be_task=False, use_node
             else:
                 incoming_tasks = [x for x in node_incoming if "task" in x["type"].lower()]
                 task_nodes = [x for x in node_outgoing if "task" in x["type"].lower()]
-            if len(incoming_tasks) == 1 and len(node_outgoing) > 1:
+            if (len(incoming_tasks) == 1 or relax_condition_one_entry) and len(node_outgoing) > 1:
                 gateway_nodes = [x for x in node_outgoing if "gateway" in x["type"].lower()]
                 other_nodes = [x for x in node_outgoing if x not in task_nodes and x not in gateway_nodes]
                 if consider_all_elements_to_be_task or (len(other_nodes) == 0 and task_nodes):

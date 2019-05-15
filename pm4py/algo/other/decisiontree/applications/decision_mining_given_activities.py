@@ -10,6 +10,7 @@ from pm4py.objects.bpmn.util import gateway_map as gwmap_builder
 from pm4py.objects.bpmn.util import log_matching
 from pm4py.objects.log.log import EventLog
 from pm4py.objects.log.util import get_log_representation, get_prefixes
+import logging
 
 DEFAULT_MAX_REC_DEPTH_DEC_MINING = 2
 
@@ -39,12 +40,24 @@ def get_rules_per_edge_given_bpmn(log, bpmn_graph, parameters=None):
         "consider_all_elements_to_be_task"] if "consider_all_elements_to_be_task" in parameters else False
     avoid_matching = parameters["avoid_matching"] if "avoid_matching" in parameters else True
     use_node_id = parameters["use_node_id"] if "use_node_id" in parameters else False
+    relax_condition_one_entry = parameters[
+        "relax_condition_one_entry"] if "relax_condition_one_entry" in parameters else True
+
+    logging.basicConfig(level=logging.INFO)
+    logging.info("started get_anchors_from_log_and_bpmn_graph method len(log)=" + str(
+        len(log)) + " consider_all_elements_to_be_task=" + str(
+        consider_all_elements_to_be_task) + " avoid_matching=" + str(avoid_matching) + " use_node_id=" + str(
+        use_node_id) + " relax_condition_one_entry=" + str(relax_condition_one_entry))
 
     gateway_map, edges_map = gwmap_builder.get_gateway_map(bpmn_graph,
                                                            consider_all_elements_to_be_task=consider_all_elements_to_be_task,
-                                                           use_node_id=use_node_id)
+                                                           use_node_id=use_node_id,
+                                                           relax_condition_one_entry=relax_condition_one_entry)
+
+    logging.info("len(gateway_map)=" + str(len(gateway_map)) + " len(edges_map)=" + str(len(edges_map)))
 
     if avoid_matching:
+        logging.info("avoid_matching")
         return get_rules_per_edge(log, gateway_map, parameters=parameters)
 
     return get_rules_per_edge_given_bpmn_and_gw_map(log, bpmn_graph, gateway_map, parameters=parameters)
@@ -83,11 +96,15 @@ def get_rules_per_edge_given_bpmn_and_gw_map(log, bpmn_graph, gateway_map, param
                             gateway_map[gw]["edges"][n][model_to_log[key]] = gateway_map[gw]["edges"][n][key]
                             del gateway_map[gw]["edges"][n][key]
                 except:
+                    logging.info("get_rules_per_edge_given_bpmn_and_gw_map EXCEPTION ONE")
                     if gw in gateway_map:
                         del gateway_map[gw]
         except:
-            #traceback.print_exc()
+            logging.info("get_rules_per_edge_given_bpmn_and_gw_map EXCEPTION TWO")
+            # traceback.print_exc()
             del gateway_map[gw]
+
+    logging.info("get_rules_per_edge_given_bpmn_and_gw_map len(gateway_map)+" + str(len(gateway_map)))
 
     return get_rules_per_edge(log, gateway_map, parameters=parameters)
 
@@ -121,18 +138,25 @@ def get_rules_per_edge(log, gateway_map, parameters=None):
             source_activity = gateway_map[gw]["source"]
             if gateway_map[gw]["type"] == "onlytasks":
                 target_activities = [x for x in gateway_map[gw]["edges"]]
+                logging.info("get_rules_per_edge FIRST " + str(target_activities))
                 rules = get_decision_mining_rules_given_activities(log, target_activities, parameters=parameters)
+                logging.info("get_rules_per_edge AFTER_FIRST " + str(rules))
             else:
                 main_target_activity = list(gateway_map[gw]["edges"].keys())[0]
+                logging.info("get_rules_per_edge SECOND0 " + str(main_target_activity))
                 other_activities = get_other_activities_connected_to_source(log, source_activity, main_target_activity)
+                logging.info("get_rules_per_edge SECOND " + str(other_activities))
                 if other_activities:
                     target_activities = [main_target_activity] + other_activities
                     rules = get_decision_mining_rules_given_activities(log, target_activities, parameters=parameters)
+                    logging.info("get_rules_per_edge SECOND RULES CALCULATED")
+                logging.info("get_rules_per_edge AFTER_SECOND " + str(rules))
             for n in gateway_map[gw]["edges"]:
                 if n in rules:
                     rules_per_edge[gateway_map[gw]["edges"][n]["edge"]] = rules[n]
         except:
-            #traceback.print_exc()
+            # traceback.print_exc()
+            logging.info("exception get_rules_per_edge gw=" + str(gw) + " exception=" + str(traceback.format_exc()))
             pass
     return rules_per_edge
 
@@ -187,9 +211,13 @@ def get_decision_mining_rules_given_activities(log, activities, parameters=None)
     rules
         Discovered rules leading to activities
     """
+    logging.info("get_decision_mining_rules_given_activities 0")
     clf, feature_names, classes, len_list_logs = perform_decision_mining_given_activities(
         log, activities, parameters=parameters)
+    logging.info(
+        "get_decision_mining_rules_given_activities 1 classes=" + str(classes) + " len_list_logs=" + str(len_list_logs))
     rules = get_rules_for_classes(clf, feature_names, classes, len_list_logs)
+    logging.info("get_decision_mining_rules_given_activities 2 rules="+str(rules))
 
     return rules
 
@@ -234,7 +262,6 @@ def perform_decision_mining_given_activities(log, activities, parameters=None):
         target = target + [min(i, max_diff_targets)] * len(list_logs[i])
 
     transf_log = EventLog(list(itertools.chain.from_iterable(list_logs)))
-
     data, feature_names = get_log_representation.get_default_representation(transf_log)
 
     clf = tree.DecisionTreeClassifier(max_depth=DEFAULT_MAX_REC_DEPTH_DEC_MINING)
