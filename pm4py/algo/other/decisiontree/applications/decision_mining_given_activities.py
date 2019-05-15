@@ -153,6 +153,7 @@ def get_rules_per_edge(log, gateway_map, parameters=None):
                 logging.info("get_rules_per_edge AFTER_SECOND " + str(rules))
             for n in gateway_map[gw]["edges"]:
                 if n in rules:
+                    logging.info("n in rules = " + str(n))
                     rules_per_edge[gateway_map[gw]["edges"][n]["edge"]] = rules[n]
         except:
             # traceback.print_exc()
@@ -217,7 +218,7 @@ def get_decision_mining_rules_given_activities(log, activities, parameters=None)
     logging.info(
         "get_decision_mining_rules_given_activities 1 classes=" + str(classes) + " len_list_logs=" + str(len_list_logs))
     rules = get_rules_for_classes(clf, feature_names, classes, len_list_logs)
-    logging.info("get_decision_mining_rules_given_activities 2 rules="+str(rules))
+    logging.info("get_decision_mining_rules_given_activities 2 rules=" + str(rules))
 
     return rules
 
