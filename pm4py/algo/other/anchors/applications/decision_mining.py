@@ -6,6 +6,7 @@ import itertools
 import traceback
 from copy import deepcopy
 from pm4py.algo.other.anchors import factory as anchors_factory
+import logging
 
 
 def get_anchors_from_log_and_bpmn_graph(log, bpmn_graph, parameters=None):
@@ -32,10 +33,13 @@ def get_anchors_from_log_and_bpmn_graph(log, bpmn_graph, parameters=None):
     consider_all_elements_to_be_task = parameters[
         "consider_all_elements_to_be_task"] if "consider_all_elements_to_be_task" in parameters else False
     use_node_id = parameters["use_node_id"] if "use_node_id" in parameters else False
+    relax_condition_one_entry = parameters[
+        "relax_condition_one_entry"] if "relax_condition_one_entry" in parameters else True
 
     gateway_map, edges_map = gwmap_builder.get_gateway_map(bpmn_graph,
                                                            consider_all_elements_to_be_task=consider_all_elements_to_be_task,
-                                                           use_node_id=use_node_id)
+                                                           use_node_id=use_node_id,
+                                                           relax_condition_one_entry=relax_condition_one_entry)
 
     return get_anchors_from_log_and_gwmap(log, gateway_map, parameters=parameters)
 
@@ -78,7 +82,7 @@ def get_anchors_from_log_and_gwmap(log, gateway_map, parameters=None):
                     anchors = get_anchors_given_activities(log, target_activities, parameters=parameters)
                     ret_map[gw] = anchors
         except:
-            #traceback.print_exc()
+            # traceback.print_exc()
             pass
 
     return ret_map
