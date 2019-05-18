@@ -1,1 +1,1 @@
-from pm4py.algo.other import conceptdrift, clustering, intervaltree
+from pm4py.algo.other import conceptdrift, clustering
