@@ -119,7 +119,7 @@ setup(
         'pytz>=2018.9',
         'intervaltree',
         'bpmn_python==0.0.18',
-        'jobutil',
+        'joblib',
         'lime'
     ],
     project_urls={
