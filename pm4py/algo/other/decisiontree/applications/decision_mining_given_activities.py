@@ -11,7 +11,9 @@ from pm4py.objects.bpmn.util import log_matching
 from pm4py.objects.log.log import EventLog
 from pm4py.objects.log.util import get_log_representation, get_prefixes
 import logging
-import json
+import re
+import os
+from pm4py.visualization.decisiontree import factory as dec_tree_vis_factory
 
 DEFAULT_MAX_REC_DEPTH_DEC_MINING = 2
 
@@ -131,16 +133,21 @@ def get_rules_per_edge(log, gateway_map, parameters=None):
     if parameters is None:
         parameters = {}
 
+    save_img_dec_tree_gw = parameters["save_img_dec_tree_gw"] if "save_img_dec_tree_gw" in parameters else False
+    path_img_dec_tree_gw = parameters["path_img_dec_tree_gw"] if "path_img_dec_tree_gw" in parameters else "."
+
     rules_per_edge = {}
     for gw in gateway_map:
         try:
             rules = None
             rules = {}
+            clf = None
             source_activity = gateway_map[gw]["source"]
             if gateway_map[gw]["type"] == "onlytasks":
                 target_activities = [x for x in gateway_map[gw]["edges"]]
                 logging.info("get_rules_per_edge FIRST " + str(target_activities))
-                rules = get_decision_mining_rules_given_activities(log, target_activities, parameters=parameters)
+                rules, clf, feature_names, classes, len_list_logs, data, target = get_decision_mining_rules_given_activities(
+                    log, target_activities, parameters=parameters)
                 logging.info("get_rules_per_edge AFTER_FIRST " + str(rules))
             else:
                 main_target_activity = list(gateway_map[gw]["edges"].keys())[0]
@@ -149,13 +156,19 @@ def get_rules_per_edge(log, gateway_map, parameters=None):
                 logging.info("get_rules_per_edge SECOND " + str(other_activities))
                 if other_activities:
                     target_activities = [main_target_activity] + other_activities
-                    rules = get_decision_mining_rules_given_activities(log, target_activities, parameters=parameters)
+                    rules, clf, feature_names, classes, len_list_logs, data, target = get_decision_mining_rules_given_activities(
+                        log, target_activities, parameters=parameters)
                     logging.info("get_rules_per_edge SECOND RULES CALCULATED")
                 logging.info("get_rules_per_edge AFTER_SECOND " + str(rules))
             for n in gateway_map[gw]["edges"]:
                 if n in rules:
                     logging.info("n in rules = " + str(n))
                     rules_per_edge[gateway_map[gw]["edges"][n]["edge"]] = rules[n]
+            if clf is not None and save_img_dec_tree_gw:
+                gw_name_wo_spec_char = re.sub(r'\W+', '', gw)
+                gw_final_path = os.path.join(path_img_dec_tree_gw, gw_name_wo_spec_char + ".svg")
+                gviz = dec_tree_vis_factory.apply(clf, feature_names, classes, parameters={"format": "svg"})
+                dec_tree_vis_factory.save(gviz, gw_final_path)
         except:
             # traceback.print_exc()
             logging.info("exception get_rules_per_edge gw=" + str(gw) + " exception=" + str(traceback.format_exc()))
@@ -193,6 +206,56 @@ def get_other_activities_connected_to_source(log, source_activity, main_target_a
     return other_activities
 
 
+def get_recall_per_class(clf, data, target, classes):
+    """
+    Gets the recall per class (and the overall one)
+
+    Parameters
+    ------------
+    clf
+        Decision tree
+    data
+        Data (to test against)
+    target
+        Target of the examples
+    classes
+        Classes of the decision tree
+
+    Returns
+    ------------
+    recall
+        Recall per class dictionary
+    """
+    recall = {}
+
+    total_per_class = {}
+    correct_per_class = {}
+
+    total_per_class["@@ALL##"] = 0
+    correct_per_class["@@ALL##"] = 0
+    recall["@@ALL##"] = 0
+
+    prediction = clf.predict(data)
+
+    for i in range(len(target)):
+        cl = classes[target[i]]
+        if cl not in total_per_class:
+            total_per_class[cl] = 0
+            correct_per_class[cl] = 0
+            recall[cl] = 0
+        total_per_class[cl] = total_per_class[cl] + 1
+        total_per_class["@@ALL##"] = total_per_class["@@ALL##"] + 1
+        if prediction[i] == target[i]:
+            correct_per_class[cl] = correct_per_class[cl] + 1
+            correct_per_class["@@ALL##"] = correct_per_class["@@ALL##"] + 1
+
+    for cl in correct_per_class:
+        if total_per_class[cl] > 0:
+            recall[cl] = float(correct_per_class[cl]) / float(total_per_class[cl])
+
+    return recall
+
+
 def get_decision_mining_rules_given_activities(log, activities, parameters=None):
     """
     Performs rules discovery thanks to decision mining from a log and a list of activities
@@ -213,9 +276,13 @@ def get_decision_mining_rules_given_activities(log, activities, parameters=None)
     rules
         Discovered rules leading to activities
     """
+    if parameters is None:
+        parameters = {}
+
     logging.info("get_decision_mining_rules_given_activities 0")
-    clf, feature_names, classes, len_list_logs = perform_decision_mining_given_activities(
+    clf, feature_names, classes, len_list_logs, data, target = perform_decision_mining_given_activities(
         log, activities, parameters=parameters)
+    recall = get_recall_per_class(clf, data, target, classes)
     logging.info(
         "get_decision_mining_rules_given_activities 1 classes=" + str(classes) + " len_list_logs=" + str(len_list_logs))
     rules, correctly_classified, incorrectly_classified = get_rules_for_classes(clf, feature_names, classes,
@@ -228,17 +295,29 @@ def get_decision_mining_rules_given_activities(log, activities, parameters=None)
         this_precision = float(correctly_classified[cl]) / float(correctly_classified[cl] + incorrectly_classified[cl])
         dectree_overall_precision = float(correctly_classified["@@ALL##"]) / float(
             correctly_classified["@@ALL##"] + incorrectly_classified["@@ALL##"])
+        this_recall = recall[cl]
+        all_recall = recall["@@ALL##"]
+
+        this_f = 0.0
+        all_f = 0.0
+
+        if (this_recall + this_precision) > 0:
+            this_f = (2.0 * this_recall * this_precision) / (this_recall + this_precision)
+            all_f = (2.0 * all_recall * dectree_overall_precision) / (all_recall + dectree_overall_precision)
+
         ret_rules[cl] = {"decisionRule": rules[cl], "thisCorrectlyClassified": correctly_classified[cl],
                          "thisIncorrectlyClassified": incorrectly_classified[cl],
                          "thisConsideredItems": correctly_classified[cl] + incorrectly_classified[cl],
                          "allCorrectlyClassified": correctly_classified["@@ALL##"],
                          "allIncorrectlyClassified": incorrectly_classified["@@ALL##"],
                          "allConsideredItems": correctly_classified["@@ALL##"] + incorrectly_classified["@@ALL##"],
-                         "thisPrecision": this_precision, "decTreeOverallPrecision": dectree_overall_precision}
+                         "thisPrecision": this_precision, "decTreeOverallPrecision": dectree_overall_precision,
+                         "thisRecall": this_recall, "allRecall": all_recall, "thisFMeasure": this_f,
+                         "allFMeasure": all_f}
 
     logging.info("get_decision_mining_rules_given_activities 3 ret_rules=" + str(ret_rules))
 
-    return ret_rules
+    return ret_rules, clf, feature_names, classes, len_list_logs, data, target
 
 
 def perform_decision_mining_given_activities(log, activities, parameters=None):
@@ -313,7 +392,7 @@ def perform_decision_mining_given_activities(log, activities, parameters=None):
 
     len_list_logs = [len(x) for x in list_logs]
 
-    return clf, feature_names, classes, len_list_logs
+    return clf, feature_names, classes, len_list_logs, data, target
 
 
 def get_rules_for_classes(tree, feature_names, classes, len_list_logs, rec_depth=0, curr_node=0, rules=None,
