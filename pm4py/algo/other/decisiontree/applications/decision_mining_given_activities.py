@@ -258,9 +258,10 @@ def perform_decision_mining_given_activities(log, activities, parameters=None):
     num_tr_attr = parameters["num_tr_attr"] if "num_tr_attr" in parameters else None
     num_ev_attr = parameters["num_ev_attr"] if "num_ev_attr" in parameters else None
     str_evsucc_attr = parameters["str_evsucc_attr"] if "str_evsucc_attr" in parameters else None
-    enable_succattr = parameters["enable_succattr"] if "enable_succattr" in parameters else True
+    enable_succattr = parameters["enable_succattr"] if "enable_succattr" in parameters else False
     activity_def_representation = parameters[
         "activity_def_representation"] if "activity_def_representation" in parameters else True
+    max_rec_depth = parameters["max_rec_depth"] if "max_rec_depth" in parameters else DEFAULT_MAX_REC_DEPTH_DEC_MINING
 
     list_logs, considered_activities = get_prefixes.get_log_traces_to_activities(log, activities,
                                                                                  parameters=parameters)
@@ -289,7 +290,7 @@ def perform_decision_mining_given_activities(log, activities, parameters=None):
         parameters2[get_log_representation.ENABLE_ACTIVITY_DEF_REPRESENTATION] = activity_def_representation
         data, feature_names = get_log_representation.get_default_representation(transf_log, parameters=parameters2)
 
-    clf = tree.DecisionTreeClassifier(max_depth=DEFAULT_MAX_REC_DEPTH_DEC_MINING)
+    clf = tree.DecisionTreeClassifier(max_depth=max_rec_depth)
     clf.fit(data, target)
 
     len_list_logs = [len(x) for x in list_logs]
