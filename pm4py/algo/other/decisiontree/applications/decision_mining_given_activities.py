@@ -206,6 +206,56 @@ def get_other_activities_connected_to_source(log, source_activity, main_target_a
     return other_activities
 
 
+def get_recall_per_class(clf, data, target, classes):
+    """
+    Gets the recall per class (and the overall one)
+
+    Parameters
+    ------------
+    clf
+        Decision tree
+    data
+        Data (to test against)
+    target
+        Target of the examples
+    classes
+        Classes of the decision tree
+
+    Returns
+    ------------
+    recall
+        Recall per class dictionary
+    """
+    recall = {}
+
+    total_per_class = {}
+    correct_per_class = {}
+
+    total_per_class["@@ALL##"] = 0
+    correct_per_class["@@ALL##"] = 0
+    recall["@@ALL##"] = 0
+
+    prediction = clf.predict(data)
+
+    for i in range(len(target)):
+        cl = classes[target[i]]
+        if cl not in total_per_class:
+            total_per_class[cl] = 0
+            correct_per_class[cl] = 0
+            recall[cl] = 0
+        total_per_class[cl] = total_per_class[cl] + 1
+        total_per_class["@@ALL##"] = total_per_class["@@ALL##"] + 1
+        if prediction[i] == target[i]:
+            correct_per_class[cl] = correct_per_class[cl] + 1
+            correct_per_class["@@ALL##"] = correct_per_class["@@ALL##"] + 1
+
+    for cl in correct_per_class:
+        if total_per_class[cl] > 0:
+            recall[cl] = float(correct_per_class[cl]) / float(total_per_class[cl])
+
+    return recall
+
+
 def get_decision_mining_rules_given_activities(log, activities, parameters=None):
     """
     Performs rules discovery thanks to decision mining from a log and a list of activities
@@ -232,6 +282,7 @@ def get_decision_mining_rules_given_activities(log, activities, parameters=None)
     logging.info("get_decision_mining_rules_given_activities 0")
     clf, feature_names, classes, len_list_logs, data, target = perform_decision_mining_given_activities(
         log, activities, parameters=parameters)
+    recall = get_recall_per_class(clf, data, target, classes)
     logging.info(
         "get_decision_mining_rules_given_activities 1 classes=" + str(classes) + " len_list_logs=" + str(len_list_logs))
     rules, correctly_classified, incorrectly_classified = get_rules_for_classes(clf, feature_names, classes,
@@ -244,13 +295,25 @@ def get_decision_mining_rules_given_activities(log, activities, parameters=None)
         this_precision = float(correctly_classified[cl]) / float(correctly_classified[cl] + incorrectly_classified[cl])
         dectree_overall_precision = float(correctly_classified["@@ALL##"]) / float(
             correctly_classified["@@ALL##"] + incorrectly_classified["@@ALL##"])
+        this_recall = recall[cl]
+        all_recall = recall["@@ALL##"]
+
+        this_f = 0.0
+        all_f = 0.0
+
+        if (this_recall + this_precision) > 0:
+            this_f = (2.0 * this_recall * this_precision) / (this_recall + this_precision)
+            all_f = (2.0 * all_recall * dectree_overall_precision) / (all_recall + dectree_overall_precision)
+
         ret_rules[cl] = {"decisionRule": rules[cl], "thisCorrectlyClassified": correctly_classified[cl],
                          "thisIncorrectlyClassified": incorrectly_classified[cl],
                          "thisConsideredItems": correctly_classified[cl] + incorrectly_classified[cl],
                          "allCorrectlyClassified": correctly_classified["@@ALL##"],
                          "allIncorrectlyClassified": incorrectly_classified["@@ALL##"],
                          "allConsideredItems": correctly_classified["@@ALL##"] + incorrectly_classified["@@ALL##"],
-                         "thisPrecision": this_precision, "decTreeOverallPrecision": dectree_overall_precision}
+                         "thisPrecision": this_precision, "decTreeOverallPrecision": dectree_overall_precision,
+                         "thisRecall": this_recall, "allRecall": all_recall, "thisFMeasure": this_f,
+                         "allFMeasure": all_f}
 
     logging.info("get_decision_mining_rules_given_activities 3 ret_rules=" + str(ret_rules))
 
