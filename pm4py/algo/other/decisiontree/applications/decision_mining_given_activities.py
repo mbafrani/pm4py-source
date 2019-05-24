@@ -11,7 +11,9 @@ from pm4py.objects.bpmn.util import log_matching
 from pm4py.objects.log.log import EventLog
 from pm4py.objects.log.util import get_log_representation, get_prefixes
 import logging
-import json
+import re
+import os
+from pm4py.visualization.decisiontree import factory as dec_tree_vis_factory
 
 DEFAULT_MAX_REC_DEPTH_DEC_MINING = 2
 
@@ -131,6 +133,9 @@ def get_rules_per_edge(log, gateway_map, parameters=None):
     if parameters is None:
         parameters = {}
 
+    save_img_dec_tree_gw = parameters["save_img_dec_tree_gw"] if "save_img_dec_tree_gw" in parameters else False
+    path_img_dec_tree_gw = parameters["path_img_dec_tree_gw"] if "path_img_dec_tree_gw" in parameters else "."
+
     rules_per_edge = {}
     for gw in gateway_map:
         try:
@@ -159,6 +164,11 @@ def get_rules_per_edge(log, gateway_map, parameters=None):
                 if n in rules:
                     logging.info("n in rules = " + str(n))
                     rules_per_edge[gateway_map[gw]["edges"][n]["edge"]] = rules[n]
+            if clf is not None and save_img_dec_tree_gw:
+                gw_name_wo_spec_char = re.sub(r'\W+', '', gw)
+                gw_final_path = os.path.join(path_img_dec_tree_gw, gw_name_wo_spec_char + ".svg")
+                gviz = dec_tree_vis_factory.apply(clf, feature_names, classes, parameters={"format": "svg"})
+                dec_tree_vis_factory.save(gviz, gw_final_path)
         except:
             # traceback.print_exc()
             logging.info("exception get_rules_per_edge gw=" + str(gw) + " exception=" + str(traceback.format_exc()))
