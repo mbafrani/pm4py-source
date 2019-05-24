@@ -11,6 +11,7 @@ from pm4py.objects.bpmn.util import log_matching
 from pm4py.objects.log.log import EventLog
 from pm4py.objects.log.util import get_log_representation, get_prefixes
 import logging
+import json
 
 DEFAULT_MAX_REC_DEPTH_DEC_MINING = 2
 
@@ -217,10 +218,27 @@ def get_decision_mining_rules_given_activities(log, activities, parameters=None)
         log, activities, parameters=parameters)
     logging.info(
         "get_decision_mining_rules_given_activities 1 classes=" + str(classes) + " len_list_logs=" + str(len_list_logs))
-    rules = get_rules_for_classes(clf, feature_names, classes, len_list_logs)
+    rules, correctly_classified, incorrectly_classified = get_rules_for_classes(clf, feature_names, classes,
+                                                                                len_list_logs)
     logging.info("get_decision_mining_rules_given_activities 2 rules=" + str(rules))
 
-    return rules
+    ret_rules = {}
+
+    for cl in rules:
+        this_precision = float(correctly_classified[cl]) / float(correctly_classified[cl] + incorrectly_classified[cl])
+        dectree_overall_precision = float(correctly_classified["@@ALL##"]) / float(
+            correctly_classified["@@ALL##"] + incorrectly_classified["@@ALL##"])
+        ret_rules[cl] = {"decisionRule": rules[cl], "thisCorrectlyClassified": correctly_classified[cl],
+                         "thisIncorrectlyClassified": incorrectly_classified[cl],
+                         "thisConsideredItems": correctly_classified[cl] + incorrectly_classified[cl],
+                         "allCorrectlyClassified": correctly_classified["@@ALL##"],
+                         "allIncorrectlyClassified": incorrectly_classified["@@ALL##"],
+                         "allConsideredItems": correctly_classified["@@ALL##"] + incorrectly_classified["@@ALL##"],
+                         "thisPrecision": this_precision, "decTreeOverallPrecision": dectree_overall_precision}
+
+    logging.info("get_decision_mining_rules_given_activities 3 ret_rules=" + str(ret_rules))
+
+    return ret_rules
 
 
 def perform_decision_mining_given_activities(log, activities, parameters=None):
@@ -299,7 +317,7 @@ def perform_decision_mining_given_activities(log, activities, parameters=None):
 
 
 def get_rules_for_classes(tree, feature_names, classes, len_list_logs, rec_depth=0, curr_node=0, rules=None,
-                          curr_rec_rule=None, parameters=None):
+                          curr_rec_rule=None, correctly_classified=None, incorrectly_classified=None, parameters=None):
     """
     Gets the rules that permits to go to a specific class
 
@@ -331,6 +349,10 @@ def get_rules_for_classes(tree, feature_names, classes, len_list_logs, rec_depth
     """
     if rules is None:
         rules = {}
+    if correctly_classified is None:
+        correctly_classified = {}
+    if incorrectly_classified is None:
+        incorrectly_classified = {}
     if curr_rec_rule is None:
         curr_rec_rule = []
     if rec_depth == 0:
@@ -338,32 +360,61 @@ def get_rules_for_classes(tree, feature_names, classes, len_list_logs, rec_depth
     feature = tree.tree_.feature[curr_node]
     feature_name = feature_names[feature]
     threshold = tree.tree_.threshold[curr_node]
+
     child_left = tree.tree_.children_left[curr_node]
     child_right = tree.tree_.children_right[curr_node]
     value = [a * b for a, b in zip(tree.tree_.value[curr_node][0], len_list_logs)]
 
     if child_left == child_right:
         target_class = classes[np.argmax(value)]
+        this_correct = tree.tree_.value[curr_node][0][np.argmax(value)]
+        this_incorrect = np.sum(
+            tree.tree_.value[curr_node][0][idx] for idx in range(len(value)) if not idx == np.argmax(value))
         if curr_rec_rule:
             if target_class not in rules:
                 rules[target_class] = []
+            if target_class not in correctly_classified:
+                correctly_classified[target_class] = 0
+            if target_class not in incorrectly_classified:
+                incorrectly_classified[target_class] = 0
+            if "@@ALL##" not in correctly_classified:
+                correctly_classified["@@ALL##"] = 0
+            if "@@ALL##" not in incorrectly_classified:
+                incorrectly_classified["@@ALL##"] = 0
+            correctly_classified[target_class] = correctly_classified[target_class] + this_correct
+            incorrectly_classified[target_class] = incorrectly_classified[target_class] + this_incorrect
+            correctly_classified["@@ALL##"] = correctly_classified["@@ALL##"] + this_correct
+            incorrectly_classified["@@ALL##"] = incorrectly_classified["@@ALL##"] + this_incorrect
+
             rule_to_save = "(" + " && ".join(curr_rec_rule) + ")"
             rules[target_class].append(rule_to_save)
     else:
         if not child_left == curr_node and child_left >= 0:
             new_curr_rec_rule = form_new_curr_rec_rule(curr_rec_rule, False, feature_name, threshold)
-            rules = get_rules_for_classes(tree, feature_names, classes, len_list_logs, rec_depth=rec_depth + 1,
-                                          curr_node=child_left, rules=rules, curr_rec_rule=new_curr_rec_rule,
-                                          parameters=parameters)
+            rules, correctly_classified, incorrectly_classified = get_rules_for_classes(tree, feature_names, classes,
+                                                                                        len_list_logs,
+                                                                                        rec_depth=rec_depth + 1,
+                                                                                        curr_node=child_left,
+                                                                                        rules=rules,
+                                                                                        curr_rec_rule=new_curr_rec_rule,
+                                                                                        correctly_classified=correctly_classified,
+                                                                                        incorrectly_classified=incorrectly_classified,
+                                                                                        parameters=parameters)
         if not child_right == curr_node and child_right >= 0:
             new_curr_rec_rule = form_new_curr_rec_rule(curr_rec_rule, True, feature_name, threshold)
-            rules = get_rules_for_classes(tree, feature_names, classes, len_list_logs, rec_depth=rec_depth + 1,
-                                          curr_node=child_right, rules=rules, curr_rec_rule=new_curr_rec_rule,
-                                          parameters=parameters)
+            rules, correctly_classified, incorrectly_classified = get_rules_for_classes(tree, feature_names, classes,
+                                                                                        len_list_logs,
+                                                                                        rec_depth=rec_depth + 1,
+                                                                                        curr_node=child_right,
+                                                                                        rules=rules,
+                                                                                        curr_rec_rule=new_curr_rec_rule,
+                                                                                        correctly_classified=correctly_classified,
+                                                                                        incorrectly_classified=incorrectly_classified,
+                                                                                        parameters=parameters)
     if rec_depth == 0:
         for act in rules:
             rules[act] = " || ".join(rules[act])
-    return rules
+    return rules, correctly_classified, incorrectly_classified
 
 
 def form_new_curr_rec_rule(curr_rec_rule, positive, feature_name, threshold):
