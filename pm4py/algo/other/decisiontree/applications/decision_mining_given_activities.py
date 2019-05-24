@@ -253,6 +253,14 @@ def perform_decision_mining_given_activities(log, activities, parameters=None):
         parameters = {}
 
     max_diff_targets = parameters["max_diff_targets"] if "max_diff_targets" in parameters else 9999999999
+    str_tr_attr = parameters["str_tr_attr"] if "str_tr_attr" in parameters else None
+    str_ev_attr = parameters["str_ev_attr"] if "str_ev_attr" in parameters else None
+    num_tr_attr = parameters["num_tr_attr"] if "num_tr_attr" in parameters else None
+    num_ev_attr = parameters["num_ev_attr"] if "num_ev_attr" in parameters else None
+    str_evsucc_attr = parameters["str_evsucc_attr"] if "str_evsucc_attr" in parameters else None
+    enable_succattr = parameters["enable_succattr"] if "enable_succattr" in parameters else True
+    activity_def_representation = parameters[
+        "activity_def_representation"] if "activity_def_representation" in parameters else True
 
     list_logs, considered_activities = get_prefixes.get_log_traces_to_activities(log, activities,
                                                                                  parameters=parameters)
@@ -263,7 +271,23 @@ def perform_decision_mining_given_activities(log, activities, parameters=None):
         target = target + [min(i, max_diff_targets)] * len(list_logs[i])
 
     transf_log = EventLog(list(itertools.chain.from_iterable(list_logs)))
-    data, feature_names = get_log_representation.get_default_representation(transf_log)
+
+    if str_tr_attr is not None or str_ev_attr is not None or num_tr_attr is not None or num_ev_attr is not None or str_evsucc_attr is not None:
+        if str_tr_attr is None:
+            str_tr_attr = []
+        if str_ev_attr is None:
+            str_ev_attr = []
+        if num_tr_attr is None:
+            num_tr_attr = []
+        if num_ev_attr is None:
+            num_ev_attr = []
+        data, feature_names = get_log_representation.get_representation(log, str_tr_attr, str_ev_attr, num_tr_attr,
+                                                                        num_ev_attr, str_evsucc_attr=str_evsucc_attr)
+    else:
+        parameters2 = deepcopy(parameters)
+        parameters2[get_log_representation.ENABLE_SUCC_DEF_REPRESENTATION] = enable_succattr
+        parameters2[get_log_representation.ENABLE_ACTIVITY_DEF_REPRESENTATION] = activity_def_representation
+        data, feature_names = get_log_representation.get_default_representation(transf_log, parameters=parameters2)
 
     clf = tree.DecisionTreeClassifier(max_depth=DEFAULT_MAX_REC_DEPTH_DEC_MINING)
     clf.fit(data, target)
@@ -274,7 +298,7 @@ def perform_decision_mining_given_activities(log, activities, parameters=None):
 
 
 def get_rules_for_classes(tree, feature_names, classes, len_list_logs, rec_depth=0, curr_node=0, rules=None,
-                          curr_rec_rule=None):
+                          curr_rec_rule=None, parameters=None):
     """
     Gets the rules that permits to go to a specific class
 
@@ -296,6 +320,8 @@ def get_rules_for_classes(tree, feature_names, classes, len_list_logs, rec_depth
         Already established rules by the recursion algorithm
     curr_rec_rule
         Rule that the current recursion would like to add
+    parameters
+        Parameters of the algorithm
 
     Returns
     -------------
@@ -326,11 +352,13 @@ def get_rules_for_classes(tree, feature_names, classes, len_list_logs, rec_depth
         if not child_left == curr_node and child_left >= 0:
             new_curr_rec_rule = form_new_curr_rec_rule(curr_rec_rule, False, feature_name, threshold)
             rules = get_rules_for_classes(tree, feature_names, classes, len_list_logs, rec_depth=rec_depth + 1,
-                                          curr_node=child_left, rules=rules, curr_rec_rule=new_curr_rec_rule)
+                                          curr_node=child_left, rules=rules, curr_rec_rule=new_curr_rec_rule,
+                                          parameters=parameters)
         if not child_right == curr_node and child_right >= 0:
             new_curr_rec_rule = form_new_curr_rec_rule(curr_rec_rule, True, feature_name, threshold)
             rules = get_rules_for_classes(tree, feature_names, classes, len_list_logs, rec_depth=rec_depth + 1,
-                                          curr_node=child_right, rules=rules, curr_rec_rule=new_curr_rec_rule)
+                                          curr_node=child_right, rules=rules, curr_rec_rule=new_curr_rec_rule,
+                                          parameters=parameters)
     if rec_depth == 0:
         for act in rules:
             rules[act] = " || ".join(rules[act])
