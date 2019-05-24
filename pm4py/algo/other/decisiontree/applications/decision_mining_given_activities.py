@@ -136,11 +136,13 @@ def get_rules_per_edge(log, gateway_map, parameters=None):
         try:
             rules = None
             rules = {}
+            clf = None
             source_activity = gateway_map[gw]["source"]
             if gateway_map[gw]["type"] == "onlytasks":
                 target_activities = [x for x in gateway_map[gw]["edges"]]
                 logging.info("get_rules_per_edge FIRST " + str(target_activities))
-                rules = get_decision_mining_rules_given_activities(log, target_activities, parameters=parameters)
+                rules, clf, feature_names, classes, len_list_logs, data, target = get_decision_mining_rules_given_activities(
+                    log, target_activities, parameters=parameters)
                 logging.info("get_rules_per_edge AFTER_FIRST " + str(rules))
             else:
                 main_target_activity = list(gateway_map[gw]["edges"].keys())[0]
@@ -149,7 +151,8 @@ def get_rules_per_edge(log, gateway_map, parameters=None):
                 logging.info("get_rules_per_edge SECOND " + str(other_activities))
                 if other_activities:
                     target_activities = [main_target_activity] + other_activities
-                    rules = get_decision_mining_rules_given_activities(log, target_activities, parameters=parameters)
+                    rules, clf, feature_names, classes, len_list_logs, data, target = get_decision_mining_rules_given_activities(
+                        log, target_activities, parameters=parameters)
                     logging.info("get_rules_per_edge SECOND RULES CALCULATED")
                 logging.info("get_rules_per_edge AFTER_SECOND " + str(rules))
             for n in gateway_map[gw]["edges"]:
@@ -213,8 +216,11 @@ def get_decision_mining_rules_given_activities(log, activities, parameters=None)
     rules
         Discovered rules leading to activities
     """
+    if parameters is None:
+        parameters = {}
+
     logging.info("get_decision_mining_rules_given_activities 0")
-    clf, feature_names, classes, len_list_logs = perform_decision_mining_given_activities(
+    clf, feature_names, classes, len_list_logs, data, target = perform_decision_mining_given_activities(
         log, activities, parameters=parameters)
     logging.info(
         "get_decision_mining_rules_given_activities 1 classes=" + str(classes) + " len_list_logs=" + str(len_list_logs))
@@ -238,7 +244,7 @@ def get_decision_mining_rules_given_activities(log, activities, parameters=None)
 
     logging.info("get_decision_mining_rules_given_activities 3 ret_rules=" + str(ret_rules))
 
-    return ret_rules
+    return ret_rules, clf, feature_names, classes, len_list_logs, data, target
 
 
 def perform_decision_mining_given_activities(log, activities, parameters=None):
@@ -313,7 +319,7 @@ def perform_decision_mining_given_activities(log, activities, parameters=None):
 
     len_list_logs = [len(x) for x in list_logs]
 
-    return clf, feature_names, classes, len_list_logs
+    return clf, feature_names, classes, len_list_logs, data, target
 
 
 def get_rules_for_classes(tree, feature_names, classes, len_list_logs, rec_depth=0, curr_node=0, rules=None,
