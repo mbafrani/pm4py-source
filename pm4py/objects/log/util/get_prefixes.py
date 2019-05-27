@@ -79,11 +79,14 @@ def get_log_traces_to_activities(log, activities, parameters=None):
         parameters_filt1["positive"] = True
         parameters_filt2["positive"] = False
         filtered_log = attributes_filter.apply(log, [act], parameters=parameters_filt1)
-        logging.info("get_log_traces_to_activities activities="+str(activities)+" act=" + str(act) + " 0 len(filtered_log)=" + str(len(filtered_log)))
+        logging.info("get_log_traces_to_activities activities=" + str(activities) + " act=" + str(
+            act) + " 0 len(filtered_log)=" + str(len(filtered_log)))
         filtered_log = attributes_filter.apply(filtered_log, other_acts, parameters=parameters_filt2)
-        logging.info("get_log_traces_to_activities activities="+str(activities)+" act=" + str(act) + " 1 len(filtered_log)=" + str(len(filtered_log)))
+        logging.info("get_log_traces_to_activities activities=" + str(activities) + " act=" + str(
+            act) + " 1 len(filtered_log)=" + str(len(filtered_log)))
         filtered_log, act_durations = get_log_traces_until_activity(filtered_log, act, parameters=parameters)
-        logging.info("get_log_traces_to_activities activities="+str(activities)+" act=" + str(act) + " 2 len(filtered_log)=" + str(len(filtered_log)))
+        logging.info("get_log_traces_to_activities activities=" + str(activities) + " act=" + str(
+            act) + " 2 len(filtered_log)=" + str(len(filtered_log)))
         if filtered_log:
             list_logs.append(filtered_log)
             considered_activities.append(act)
