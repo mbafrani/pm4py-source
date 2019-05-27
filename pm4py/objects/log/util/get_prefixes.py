@@ -119,6 +119,7 @@ def get_log_traces_until_activity(log, activity, parameters=None):
         constants.PARAMETER_CONSTANT_ACTIVITY_KEY] if constants.PARAMETER_CONSTANT_ACTIVITY_KEY in parameters else xes.DEFAULT_NAME_KEY
     timestamp_key = parameters[
         constants.PARAMETER_CONSTANT_TIMESTAMP_KEY] if constants.PARAMETER_CONSTANT_TIMESTAMP_KEY in parameters else xes.DEFAULT_TIMESTAMP_KEY
+    use_future_attributes = parameters["use_future_attributes"] if "use_future_attributes" in parameters else False
 
     new_log = EventLog()
     traces_interlapsed_time_to_act = []
@@ -130,7 +131,6 @@ def get_log_traces_until_activity(log, activity, parameters=None):
             new_trace = Trace(log[i][0:ev_in_tr_w_act[0]])
             for attr in log[i].attributes:
                 new_trace.attributes[attr] = log[i].attributes[attr]
-            new_log.append(new_trace)
             try:
                 curr_trace_interlapsed_time_to_act = log[i][ev_in_tr_w_act[0]][timestamp_key].timestamp() - \
                                                      log[i][ev_in_tr_w_act[0] - 1][timestamp_key].timestamp()
@@ -139,6 +139,15 @@ def get_log_traces_until_activity(log, activity, parameters=None):
                                                      log[i][ev_in_tr_w_act[0] - 1][timestamp_key]
                 logging.error("timestamp_key not timestamp")
             traces_interlapsed_time_to_act.append(curr_trace_interlapsed_time_to_act)
+
+            if use_future_attributes:
+                for j in range(ev_in_tr_w_act[0]+1, len(log[i])):
+                    new_ev = deepcopy(log[i][j])
+                    if activity_key in new_ev:
+                        del new_ev[activity_key]
+                    new_trace.append(new_ev)
+
+            new_log.append(new_trace)
         i = i + 1
 
     return new_log, traces_interlapsed_time_to_act
