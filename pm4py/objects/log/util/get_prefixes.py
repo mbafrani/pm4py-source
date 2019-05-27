@@ -135,7 +135,7 @@ def get_log_traces_until_activity(log, activity, parameters=None):
             new_trace = Trace(log[i][0:ev_in_tr_w_act[0]])
             for attr in log[i].attributes:
                 new_trace.attributes[attr] = log[i].attributes[attr]
-            new_log.append(new_trace)
+
             if duration_attribute is None:
                 try:
                     curr_trace_interlapsed_time_to_act = log[i][ev_in_tr_w_act[0]][timestamp_key].timestamp() - \
