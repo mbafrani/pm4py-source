@@ -119,6 +119,7 @@ def get_log_traces_until_activity(log, activity, parameters=None):
         constants.PARAMETER_CONSTANT_ACTIVITY_KEY] if constants.PARAMETER_CONSTANT_ACTIVITY_KEY in parameters else xes.DEFAULT_NAME_KEY
     timestamp_key = parameters[
         constants.PARAMETER_CONSTANT_TIMESTAMP_KEY] if constants.PARAMETER_CONSTANT_TIMESTAMP_KEY in parameters else xes.DEFAULT_TIMESTAMP_KEY
+    duration_attribute = parameters["duration"] if "duration" in parameters else None
 
     new_log = EventLog()
     traces_interlapsed_time_to_act = []
@@ -131,13 +132,16 @@ def get_log_traces_until_activity(log, activity, parameters=None):
             for attr in log[i].attributes:
                 new_trace.attributes[attr] = log[i].attributes[attr]
             new_log.append(new_trace)
-            try:
-                curr_trace_interlapsed_time_to_act = log[i][ev_in_tr_w_act[0]][timestamp_key].timestamp() - \
-                                                     log[i][ev_in_tr_w_act[0] - 1][timestamp_key].timestamp()
-            except:
-                curr_trace_interlapsed_time_to_act = log[i][ev_in_tr_w_act[0]][timestamp_key] - \
-                                                     log[i][ev_in_tr_w_act[0] - 1][timestamp_key]
-                logging.error("timestamp_key not timestamp")
+            if duration_attribute is None:
+                try:
+                    curr_trace_interlapsed_time_to_act = log[i][ev_in_tr_w_act[0]][timestamp_key].timestamp() - \
+                                                         log[i][ev_in_tr_w_act[0] - 1][timestamp_key].timestamp()
+                except:
+                    curr_trace_interlapsed_time_to_act = log[i][ev_in_tr_w_act[0]][timestamp_key] - \
+                                                         log[i][ev_in_tr_w_act[0] - 1][timestamp_key]
+                    logging.error("timestamp_key not timestamp")
+            else:
+                curr_trace_interlapsed_time_to_act = log[i][ev_in_tr_w_act[0]][duration_attribute]
             traces_interlapsed_time_to_act.append(curr_trace_interlapsed_time_to_act)
         i = i + 1
 
