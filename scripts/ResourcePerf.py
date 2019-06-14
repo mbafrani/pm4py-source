@@ -10,7 +10,8 @@ from pyvis.network import Network
 
 class ResourcePerformace:
 
-    def get_input_file(self):
+    # Get event log (csv, xes format), Convert both to csv file
+	def get_input_file(self):
         event_log_address = input("Event Log:")
         log_format = event_log_address.split('.')[-1]
 
@@ -27,7 +28,8 @@ class ResourcePerformace:
 
         return event_log
 
-    def create_matrix_resource(self, event_log):
+    # Create DataFrame including 
+	def create_matrix_resource(self, event_log):
 
         event_log['Complete Timestamp'] = pd.to_datetime(event_log['Complete Timestamp'])
         event_log['Start Timestamp'] = pd.to_datetime(event_log['Start Timestamp'])
@@ -50,7 +52,9 @@ class ResourcePerformace:
                 i += 1
 
         return resource_matrix
-
+	
+	# Create Matrix of Activities (Adjancy Matrix for Directly Follows Graph) 
+	# In: event log, Out: Adjancy Matrix of Activities
     def create_matrix(self, event_log):
         event_log['Complete Timestamp'] = pd.to_datetime(event_log['Complete Timestamp'])
         event_log['Start Timestamp'] = pd.to_datetime(event_log['Start Timestamp'])
@@ -72,6 +76,8 @@ class ResourcePerformace:
                 i += 1
         return matrix
 
+	# Create Two Dataframe including Resource duration for each activity, Frequency of each resource doing each activity 
+	# In: event log, Out: Two Dataframes of Resource activity relation (Frequency and Duration) 
     def find_resource(self, event_log):
 
         event_log['Complete Timestamp'] = pd.to_datetime(event_log['Complete Timestamp'])
@@ -90,20 +96,23 @@ class ResourcePerformace:
         for name, group in act_groupy:
             resgroup = group.groupby('Resource')['Event Duration']
             res_per_act_freq = resgroup.size()
+			res_per_act_freq = round(res_per_act_freq,2)
             res_per_act_sum = resgroup.sum()
 
             for res in res_per_act_freq.keys():
                 freq_act_res_matrix[name][res] = res_per_act_freq.get(res)
                 if res_per_act_freq.get(res) != 0 and res_per_act_sum.get(res) != 0:
                     dur_act_res_matrix[name][res] = pd.to_timedelta(
-                        (res_per_act_sum.get(res)) / res_per_act_freq.get(res)).seconds / 3600
+                        (res_per_act_sum.get(res)) / res_per_act_freq.get(res)).seconds // 3600
 
         return freq_act_res_matrix, dur_act_res_matrix
 
-    def draw_matrix(self, matrix, freq_act_res_matrix, dur_act_res_matrix):
-        # Build a dataframe with 4 connections
+    # Create Matrix of Activities (Adjancy Matrix for Directly Follows Graph) 
+	# In: Activity Adjancy Matrix, Resource Activity Duration dataframe, Resource Activity Frequency dataframe 
+	#Out: Graph of performance of each resource for each activity on the Directly Follows Graph
+	def draw_matrix(self, matrix, freq_act_res_matrix, dur_act_res_matrix):
+        
         matrix[matrix < 0] = 0
-        # g = nx.DiGraph()
         G = Network()
 
         matrixt = matrix.T
@@ -127,16 +136,10 @@ class ResourcePerformace:
         act_act_res_dict = defaultdict(dict)
         for ac in freq_act_res_matrix.columns:
             act_res_dict = defaultdict(list)
-            # if ac == act_name:
             temp_freq_res = freq_act_res_matrix[ac]
             temp_dur_res = dur_act_res_matrix[ac]
             temp_dur_res = temp_dur_res[temp_dur_res != 0]
-            """
-            res_fer = temp_freq_res.idxmax()
-            res_dur = temp_dur_res.idxmin()
-            res_dur_max = temp_dur_res.idxmax()
-            res_dur_var = np.std(temp_dur_res)
-            """
+        
             res_dur_mean = np.mean(temp_dur_res)
             res_fer_var = np.std(temp_freq_res)
             res_fer_mean = np.mean(temp_freq_res)
@@ -170,14 +173,6 @@ class ResourcePerformace:
 
                     r_size = resource_size
 
-                    """
-                    if resource_size == "small":
-                        r_size = 5
-                    if resource_size == "large":
-                        r_size =25
-                    if resource_size == "medium":
-                        r_size = 10
-                    """
 
                     if r_color == "#cdc9c9":
                         rb_color = "darkgrey"
@@ -190,7 +185,7 @@ class ResourcePerformace:
                     #                    if resource_size > 1:
 
                     G.add_node(str(resource) + str(i), labelHighlightBold=True,
-                               title=str(round(resource_size, 2)) + "and" + str(resource_duration),
+                               title=str(round(resource_size, 2)) + "and" + str(resource_duration)+"h",
                                label=resource,
                                color={'border': rb_color, 'background': rb_color, 'highlight': highlight}, size=r_size)
                     G.add_edge(str(resource) + str(i), a)
