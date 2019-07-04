@@ -35,7 +35,8 @@ class ResourcePerformace:
         event_log['Start Timestamp'] = pd.to_datetime(event_log['Start Timestamp'])
         event_duration = abs(event_log['Complete Timestamp'] - event_log['Start Timestamp'])
         event_log['Event Duration'] = event_duration
-        # create adjancy matrix of activities
+      
+		# create adjancy matrix of activities
         resource_matrix = pd.DataFrame(
             np.zeros(shape=(event_log['Resource'].nunique(), event_log['Resource'].nunique())),
             columns=event_log['Resource'].unique(), index=event_log['Resource'].unique())
@@ -60,7 +61,14 @@ class ResourcePerformace:
         event_log['Start Timestamp'] = pd.to_datetime(event_log['Start Timestamp'])
         event_duration = abs(event_log['Complete Timestamp'] - event_log['Start Timestamp'])
         event_log['Event Duration'] = event_duration
-        # create adjancy matrix of activities
+        
+		# create activity duration dictionary		
+		act_dur_dict = {}
+        temp_act_log = event_log.groupby(['Activity'])
+        for kact, vact in temp_act_log:
+            act_dur_dict[kact] = vact['Event Duration'].mean()
+			
+		# create adjancy matrix of activities
         matrix = pd.DataFrame(np.zeros(shape=(event_log['Activity'].nunique(), event_log['Activity'].nunique())),
                               columns=event_log['Activity'].unique(), index=event_log['Activity'].unique())
         temp_log = event_log.sort_values(['Start Timestamp'], ascending=True).groupby('Case ID')
@@ -74,7 +82,7 @@ class ResourcePerformace:
             while i < (len(val) - 1):
                 matrix[val[i + 1]][val[i]] += 1
                 i += 1
-        return matrix
+        return matrix,act_dur_dict
 
 	# Create Two Dataframe including Resource duration for each activity, Frequency of each resource doing each activity 
 	# In: event log, Out: Two Dataframes of Resource activity relation (Frequency and Duration) 
@@ -110,27 +118,38 @@ class ResourcePerformace:
     # Create Matrix of Activities (Adjancy Matrix for Directly Follows Graph) 
 	# In: Activity Adjancy Matrix, Resource Activity Duration dataframe, Resource Activity Frequency dataframe 
 	#Out: Graph of performance of each resource for each activity on the Directly Follows Graph
-	def draw_matrix(self, matrix, freq_act_res_matrix, dur_act_res_matrix):
+	def draw_matrix(self, matrix, freq_act_res_matrix, dur_act_res_matrix,act_dur_dict):
         
-        matrix[matrix < 0] = 0
+        # Build a dataframe with 4 connections
+        matrix[matrix<0] = 0
         G = Network()
-
+        act_dur_sum = np.mean(pd.to_timedelta(act_dur_dict.values()).total_seconds()/3600)
         matrixt = matrix.T
 
         for act in matrix.columns:
-            G.add_node(act, shape='box')
+            act_dur_per = pd.to_timedelta(act_dur_dict[act]).total_seconds()/3600
+            if act_dur_per > (act_dur_sum + 1/2*act_dur_sum):
+                act_color = 'darkorchid'
+            if act_dur_per < (act_dur_sum - 1/2*act_dur_sum):
+                act_color='plum'
+            else:
+                act_color='mediumpurple'
+            G.add_node(act, shape='box',label=str(act)+ '\n' +str(act_dur_dict[act]),color=act_color)
             temp_in = matrix[act]
-            if temp_in.max() != 0:
-                tem_max_in = temp_in.idxmax()
-                G.add_node(tem_max_in, shape='box')
-                G.add_edge(act, tem_max_in)
-
-            temp_out = matrixt[act]
-            if temp_out.max() != 0:
-                tem_max_out = temp_out.idxmax()
-                G.add_node(tem_max_out, shape='box')
-                G.add_edge(tem_max_out, act)
-
+            sum_temp_in_values = np.sum(temp_in.values)
+            for intemp in temp_in.iteritems():
+                nact_dur_per = pd.to_timedelta(act_dur_dict[intemp[0]]).total_seconds() / 3600
+                if nact_dur_per > 2 * (act_dur_sum / 3):
+                    act_color = 'darkorchid'
+                if nact_dur_per < act_dur_sum / 3:
+                    act_color = 'plum'
+                else:
+                    act_color = 'mediumpurple'
+                if intemp[1]/sum_temp_in_values> 0.1:
+                    #tem_max_in =temp_in.idxmax()
+                    G.add_node(intemp[0], shape='box',color = act_color,label=str(intemp[0])+ '\n' +str(act_dur_dict[intemp[0]]))
+                    G.add_edge(act,intemp[0])
+           
         i = 0
 
         act_act_res_dict = defaultdict(dict)
@@ -202,6 +221,6 @@ class ResourcePerformace:
 if __name__ == "__main__":
     resper = ResourcePerformace()
     event_log = resper.get_input_file()
-    matrix = resper.create_matrix(event_log)
+    matrix,act_dur_dict = resper.create_matrix(event_log)
     freq_act_res_matrix, dur_act_res_matrix = resper.find_resource(event_log)
-    resper.draw_matrix(matrix, freq_act_res_matrix, dur_act_res_matrix)
+    resper.draw_matrix(matrix, freq_act_res_matrix, dur_act_res_matrix,act_dur_dict)
